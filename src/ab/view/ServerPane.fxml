@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Font?>
+
+
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ab.view.ServerPaneController">
+   <children>
+      <Button layoutX="137.0" layoutY="185.0" mnemonicParsing="false" onAction="#handleGame" text="Game" />
+      <Button layoutX="449.0" layoutY="185.0" mnemonicParsing="false" onAction="#handleCancel" text="Cancel" />
+      <Label layoutX="238.0" layoutY="77.0" text="SERVER">
+         <font>
+            <Font size="37.0" />
+         </font>
+      </Label>
+   </children>
+</AnchorPane>
