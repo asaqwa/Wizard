@@ -8,23 +8,36 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 
-import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Connection {
-    static ArrayList<String> serverIPs = new ArrayList<>();
-    static final long startTime = System.currentTimeMillis();
-    static String brdReply;
-    static NetworkUnit unit;
-//    private static DatagramSocket socket = null;
+    static public NetworkUnit unit;
+    static HashMap<String, Integer> serverIPs = new HashMap<>();
+    static boolean isStarted = false;
+
+    final long startTime = System.currentTimeMillis();
+    final byte controlNumber = (byte) (Math.random()*256) ;
+
 
     public static void main(String[] args) {
+        proceed();
+    }
+
+    public static void proceed() {
         findIP();
-        BrdReceiver brdReceiver = new BrdReceiver();
-        brdReceiver.start();
-        connectionRequest();
+        while (!isStarted) {
+            Connection connection = new Connection();
+            BrdReceiver brdReceiver = new BrdReceiver(connection);
+            brdReceiver.start();
+            connection.connectionRequest();
+
+//            try {
+//                connection.wait();
+//            } catch (InterruptedException ignore) {}
+        }
 
         try {
             Thread.sleep(15000);
@@ -33,28 +46,33 @@ public class Connection {
         }
     }
 
-    private static void connectionRequest() {
-        for (String brdIP : serverIPs) {
+    private void connectionRequest() {
+        byte[] data = getRequestData();
+        for (Map.Entry<String, Integer> entry : serverIPs.entrySet()) {
             int brdPort = 32278;
-            InetSocketAddress sa = new InetSocketAddress(brdIP, brdPort);
+            InetSocketAddress sa = new InetSocketAddress(entry.getKey(), brdPort);
             System.out.println(sa);
-            try (DatagramSocket socket = new DatagramSocket(sa)) {
-
-                socket.setBroadcast(true);
-                byte[] buffer = {2};
-                for (int port = 31278; port < 31283; port++) {
-                    DatagramPacket packet
-                            = new DatagramPacket(buffer, buffer.length, InetAddress.getByName("255.255.255.255"), port);
-                    socket.send(packet);
+            while (brdPort<32283) {
+                try (DatagramSocket socket = new DatagramSocket(sa)) {
+                    socket.setBroadcast(true);
+                    for (int port = 31278; port < 31283; port++) {
+                        DatagramPacket packet
+                                = new DatagramPacket(data, data.length, InetAddress.getByName("255.255.255.255"), port);
+                        socket.send(packet);
+                    }
+                    entry.setValue(brdPort);
+                    break;
+                } catch (IOException e) {
+                    brdPort++;
                 }
-            } catch (SocketException e) {
-                throw new RuntimeException(e);
-            } catch (UnknownHostException e) {
-                throw new RuntimeException(e);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
             }
         }
+    }
+
+    private byte[] getRequestData() {
+        return new byte[] {BrdReceiver.IP_REQUEST, (byte)(startTime>>>56&255), (byte)(startTime>>>48&255),
+                (byte)(startTime>>>40&255), (byte)(startTime>>>32&255), (byte)(startTime>>>24&255), (byte)(startTime>>>16&255),
+                (byte)(startTime>>>8&255), (byte)(startTime&255), controlNumber};
     }
 
 
@@ -65,31 +83,11 @@ public class Connection {
                 NetworkInterface ni = nis.nextElement();
                 if (ni.isLoopback() || !ni.isUp() || ni.getDisplayName().toLowerCase().contains("host-only")) continue;
                 ni.getInterfaceAddresses().stream().map(a->a.getAddress().getHostAddress())
-                        .filter(s->s.matches("\\d+\\.\\d+\\.\\d+\\.\\d+")).forEach(s->serverIPs.add(s));
+                        .filter(s->s.matches("\\d+\\.\\d+\\.\\d+\\.\\d+")).forEach(s->serverIPs.put(s, null));
             }
             if (serverIPs.isEmpty()) throw new RuntimeException("No Connection");
-            System.out.println("IPs - " + serverIPs);
         } catch (SocketException e) {
             throw new RuntimeException(e);
         }
     }
 }
-
-
-/*
-
-        broadcast("Hello", InetAddress.getByName("255.255.255.255"));
-    }
-
-    public static void broadcast(  String broadcastMessage, InetAddress address) throws IOException {
-        socket = new DatagramSocket();
-        socket.setBroadcast(true);
-
-        byte[] buffer = broadcastMessage.getBytes();
-
-        DatagramPacket packet
-                = new DatagramPacket(buffer, buffer.length, address, 4445);
-        socket.send(packet);
-        socket.close();
-
-*/

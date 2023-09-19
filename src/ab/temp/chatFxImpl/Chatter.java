@@ -1,4 +1,4 @@
-package ab.temp;
+package ab.temp.chatFxImpl;
 
 import javafx.application.Application;
 import javafx.beans.property.ObjectProperty;

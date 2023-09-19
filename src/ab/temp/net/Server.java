@@ -60,7 +60,7 @@ public class Server {
             System.out.println("New connection: " + socket.getRemoteSocketAddress());
             try (Connection connection = new Connection()) {
                 userName = serverHandshake(connection);
-                sendBroadcastMessage(new Message());
+//                sendBroadcastMessage(new Message());
                 notifyUsers(connection, userName);
                 serverMainLoop(connection, userName);
             } catch (IOException | ClassNotFoundException e) {
@@ -70,7 +70,7 @@ public class Server {
             } finally {
                 if (userName != null) {
                     connectionMap.remove(userName);
-                    sendBroadcastMessage(new Message());
+//                    sendBroadcastMessage(new Message());
                     System.out.println("Connection closed. " + socket.getRemoteSocketAddress());
                 }
             }

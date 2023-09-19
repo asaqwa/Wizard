@@ -13,32 +13,37 @@ import java.util.ArrayList;
 import java.util.stream.IntStream;
 
 public class BrdReceiver extends Thread {
-    private static final int SERVER = 1;
-    private static final int IP_REQUEST = 2;
-    private static final int WAIT = 3;
-    private static final int FATAL_ERROR = 4;
+    static final int SERVER = 1;
+    static final int IP_REQUEST = 2;
+    static final int WAIT = 3;
+    static final int FATAL_ERROR = 4;
+    static final int SERVER_COLLISION = 5;
 
+    private Connection connection;
     private int port = 31278;
-    private final long startTime;
     private ArrayList<DatagramPacket> waitList = new ArrayList<>();
 
-    public BrdReceiver() {
+    public BrdReceiver(Connection connection) {
         super("Broadcast Receiver");
-        startTime = System.currentTimeMillis();
         setDaemon(true);
+        this.connection = connection;
     }
 
     @Override
     public void run() {
+
         for ( ;port < 31283; port++) {
             try (DatagramSocket ds = new DatagramSocket(port)) {
                 ds.setBroadcast(true);
+
                 if (initConnection(ds)) {
                     Connection.unit = new Server();
                     mainLoop(ds);
                 } else {
                     return;
                 }
+
+
             } catch (SocketException ignore) {
                 System.out.println("port is closed: " + port);
             } catch (SetTimeoutException e) {
@@ -49,7 +54,8 @@ public class BrdReceiver extends Thread {
     }
 
     private boolean initConnection(DatagramSocket ds) {
-        final int packetSize = 1024;
+        final int packetSize = 20;
+        DatagramPacket packet = new DatagramPacket(new byte[packetSize], packetSize);
 
         try {
             ds.setSoTimeout(100);
@@ -57,33 +63,34 @@ public class BrdReceiver extends Thread {
             throw new SetTimeoutException();
         }
 
-        DatagramPacket packet = new DatagramPacket(new byte[packetSize], packetSize);
-        while (true) {
-            try {
+        try {
+            while (true) {
                 ds.receive(packet);
-                if (Connection.serverIPs.contains(packet.getAddress().getHostAddress()))
+
+                if (Connection.serverIPs.containsKey(packet.getAddress().getHostAddress())) {
                     continue;
+                }
 
                 byte[] data = packet.getData();
                 if (data[0] == SERVER) {
-                    Connection.unit = new Client();
+                    Connection.unit = new Client(packet.getAddress(), packet.getPort());
                     return false;
-                }
-                else if (data[0] == IP_REQUEST) {
-                    long otherTime =  IntStream.range(1,9).mapToLong(i->data[i]&255L).reduce((a, b)-> (a<<8)|b).orElse(0);
-                    if (otherTime>startTime) {
+                } else if (data[0] == IP_REQUEST) {
+                    long otherTime = IntStream.range(1, 9).mapToLong(i -> data[i] & 255L).reduce((a, b) -> (a << 8) | b).orElse(0);
+                    if (otherTime > connection.startTime) {
 
                     }
                     System.out.println("IP request received");
                 }
-            } catch (SocketTimeoutException e) {
-                return true;
-            } catch (IOException e) {
-                System.out.println("packet error");
             }
+        } catch(SocketTimeoutException e){
+            return true;
+        } catch(IOException e){
+            System.out.println("packet error");
         }
-//        return false;
+        return false;
     }
+
 
     private void mainLoop(DatagramSocket ds) {
         try {

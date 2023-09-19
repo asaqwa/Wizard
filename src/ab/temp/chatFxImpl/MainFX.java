@@ -1,4 +1,4 @@
-package ab.temp;
+package ab.temp.chatFxImpl;
 
 import java.util.ArrayList;
 import java.util.List;
