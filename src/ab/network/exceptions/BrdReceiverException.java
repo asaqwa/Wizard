@@ -1,4 +1,4 @@
-package ab.net.exceptions;
+package ab.network.exceptions;
 
 public class BrdReceiverException extends RuntimeException{
     public BrdReceiverException(String message) {

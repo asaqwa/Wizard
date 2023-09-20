@@ -1,4 +1,4 @@
-package ab.net;
+package ab.network;
 
 import ab.control.FatalError;
 import ab.model.chat.Message;
@@ -11,7 +11,7 @@ import java.net.Socket;
 
 import static ab.model.chat.MessageType.*;
 
-public class Client extends NetworkUnit implements AutoCloseable {
+public class Client extends NetworkUnit {
     private Socket socket;
 
     public Client(InetAddress serverAddress, int port) {
