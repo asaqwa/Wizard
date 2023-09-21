@@ -1,4 +1,4 @@
-package ab.network;
+package ab.net;
 
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;

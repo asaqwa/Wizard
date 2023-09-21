@@ -1,52 +1,30 @@
 package ab.network;
 
 
-import ab.network.exceptions.StartNewConnectionException;
+import ab.net.InterfaceData;
+import ab.network.exceptions.ConnectionError;
 
-
+import java.net.InetAddress;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
-
 import java.util.Enumeration;
 import java.util.HashMap;
 
 public class Connection {
-    static public NetworkUnit unit;
-    static HashMap<String, InterfaceData> serverIPs = new HashMap<>();
-    static boolean isStarted = false;
-    static public Connection instance = null;
-
-    public final long startTime = System.currentTimeMillis();
-    final byte controlNumber = (byte) (Math.random()*256) ;
-
-
-    public static void main(String[] args) {
-        proceed();
+    private final HashMap<String, InetAddress> localNetworks;
+    private final boolean isServer;
+    private final NetworkUnit unit;
+    public Connection(boolean isServer) throws ConnectionError {
+        this.isServer = isServer;
+        localNetworks = getLocalNetworks();
+        if (isServer) unit = new Server(localNetworks);
+        else unit = new Client();
     }
 
-    public static void proceed() {
-        findIPs();
 
-        for (int attempt = 1; attempt <= 3; attempt++) {
-            try {
-                instance = new Connection();
-                BrdSenderOperator sender = new BrdSenderOperator(instance);
-                BrdReceiver brdReceiver = new BrdReceiver(instance, sender);
-                brdReceiver.start();
-                sender.connectionRequest();
-                synchronized (instance) {
-                    try {
-                        instance.wait(1000);
-                    } catch (InterruptedException ignore) {
-                    }
-                }
-
-            } catch (StartNewConnectionException ignore) {}
-        }
-    }
-
-    public static void findIPs() {
+    private HashMap<String, InetAddress> getLocalNetworks() throws ConnectionError {
+        HashMap<String, InetAddress> localNetworks = new HashMap<>();
         try {
             Enumeration<NetworkInterface> nis = NetworkInterface.getNetworkInterfaces();
             while (nis.hasMoreElements()) {
@@ -55,18 +33,14 @@ public class Connection {
                 for (InterfaceAddress ia : ni.getInterfaceAddresses()) {
                     String hostAddress = ia.getAddress().getHostAddress();
                     if (hostAddress.matches("\\d+\\.\\d+\\.\\d+\\.\\d+")) {
-                        serverIPs.put(hostAddress, new InterfaceData(ni, ia, hostAddress));
+                        localNetworks.put(hostAddress, ia.getAddress());
                     }
                 }
-                ni.getInterfaceAddresses().stream().map(a->a.getAddress().getHostAddress())
-                        .filter(s->s.matches("\\d+\\.\\d+\\.\\d+\\.\\d+")).forEach(s->serverIPs.put(s, null));
             }
-            if (serverIPs.isEmpty()) throw new RuntimeException("No Connection");
+            if (localNetworks.isEmpty()) throw new ConnectionError();
+            return localNetworks;
         } catch (SocketException e) {
-            throw new RuntimeException(e);
+            throw new ConnectionError();
         }
-    }
-
-    private Connection() {
     }
 }

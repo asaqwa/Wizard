@@ -1,20 +1,29 @@
-package ab.network;
+package ab.net;
 
-import ab.network.exceptions.StartNewConnectionException;
+import ab.net.exceptions.StartNewConnectionException;
 
 import java.io.IOException;
 
 import java.net.*;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.stream.IntStream;
 
-import static ab.network.BrdType.*;
+import static ab.net.BrdType.*;
 
+/*
+*   Broadcast packet structure:
+*       1       2-9     10
+*
+*
+*
+*
+*
+* */
 public class BrdReceiver extends Thread implements AutoCloseable {
 
     private int port = 31278;
-    private ArrayList<DatagramPacket> waitList = new ArrayList<>();
+    private HashMap<InetAddress, Integer> waitList = new HashMap<>();
     private boolean serverIsCaught = false;
     private final Connection connection;
     private DatagramSocket ds;
@@ -56,7 +65,7 @@ public class BrdReceiver extends Thread implements AutoCloseable {
         }
 
         try {
-            while (true) {
+            while (!connection.isStarted) {
                 ds.receive(packet);
 
                 if (Connection.serverIPs.containsKey(packet.getAddress().getHostAddress())) {
@@ -65,16 +74,22 @@ public class BrdReceiver extends Thread implements AutoCloseable {
 
                 byte[] data = packet.getData();
                 if (data[0] == SERVER) {
-                    startClient(packet.getAddress(), packet.getPort()); // not right
+                    startClient(packet.getAddress(), packet.getPort()); // not right !!!!!!!!!!!!!!!!!!
                 } else if (data[0] == IP_REQUEST) {
                     long otherTime = IntStream.range(1, 9).mapToLong(i -> data[i] & 255L).reduce((a, b) -> (a << 8) | b).orElse(0);
                     if (otherTime > connection.startTime) {
-                        sender.send(new byte[] {WAIT}, packet.getPort(), packet.getAddress().toString());
+                        waitSequence(packet.getAddress(), packet.getPort());
+                    } else if (otherTime < connection.startTime) {
+                        waitReport(packet.getAddress(), packet.getPort());
+                    } else {
+                        executeCollision(packet.getAddress(), packet.getPort(), ds);
                     }
+                } else if (data[0] == WAIT) {
+                    waitSequence(packet.getAddress(), packet.getPort());
                 }
             }
         } catch(SocketTimeoutException e){
-
+            startServer();
         } catch(IOException e){
             System.out.println("packet error");
         }
@@ -94,6 +109,16 @@ public class BrdReceiver extends Thread implements AutoCloseable {
         }
     }
 
+    private void waitReport(InetAddress address, int port) {
+
+    }
+
+    private void waitSequence(InetAddress address, int port) {
+        waitList.put(address, port);
+    }
+
+    private void executeCollision(InetAddress address, int port, DatagramSocket ds) {
+    }
 
     private void mainLoop(DatagramSocket ds) {
         try {

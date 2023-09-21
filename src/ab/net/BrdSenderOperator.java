@@ -1,18 +1,19 @@
-package ab.network;
+package ab.net;
 
-import ab.network.exceptions.BrdSenderException;
-import ab.network.exceptions.StartNewConnectionException;
+import ab.net.exceptions.BrdSenderException;
+import ab.net.exceptions.StartNewConnectionException;
 
 import java.io.IOException;
 import java.net.*;
 import java.util.HashMap;
 
-import static ab.network.BrdType.*;
+import static ab.net.BrdType.*;
 
 public class BrdSenderOperator implements AutoCloseable {
     HashMap<String, Sender> senders = new HashMap<>();
     Connection connection;
     InetAddress brdAddress;
+    byte[] brdRequest;
 
     BrdSenderOperator(Connection connection) {
         this.connection = connection;

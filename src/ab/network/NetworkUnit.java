@@ -1,9 +1,6 @@
 package ab.network;
 
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.Closeable;
 
-public abstract class NetworkUnit implements AutoCloseable {
-    ObjectInputStream in;
-    ObjectOutputStream out;
+public abstract class NetworkUnit implements Closeable {
 }

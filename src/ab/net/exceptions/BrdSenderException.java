@@ -1,4 +1,4 @@
-package ab.network.exceptions;
+package ab.net.exceptions;
 
 public class BrdSenderException extends RuntimeException {
 }

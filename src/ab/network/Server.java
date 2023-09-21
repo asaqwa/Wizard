@@ -1,14 +1,17 @@
 package ab.network;
 
-public class Server extends NetworkUnit {
-    BrdReceiver receiver;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.util.HashMap;
 
-    public Server(BrdReceiver receiver) {
-        this.receiver = receiver;
+public class Server extends NetworkUnit {
+    HashMap<String, InetAddress> localNetworks;
+
+    public Server(HashMap<String, InetAddress> localNetworks) {
     }
 
     @Override
-    public void close() {
-        receiver.close();
+    public void close() throws IOException {
+
     }
 }

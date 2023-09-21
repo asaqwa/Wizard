@@ -1,4 +1,4 @@
-package ab.network;
+package ab.net;
 
 public abstract class BrdType {
     static final byte SERVER = 1;
