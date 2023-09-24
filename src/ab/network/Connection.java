@@ -1,30 +1,35 @@
 package ab.network;
 
-
-import ab.net.InterfaceData;
 import ab.network.exceptions.ConnectionError;
 
-import java.net.InetAddress;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Map;
 
 public class Connection {
-    private final HashMap<String, InetAddress> localNetworks;
+    final Map<IPWrapper, InterfaceAddress> localNetworks;
+
     private final boolean isServer;
     private final NetworkUnit unit;
+
     public Connection(boolean isServer) throws ConnectionError {
-        this.isServer = isServer;
-        localNetworks = getLocalNetworks();
-        if (isServer) unit = new Server(localNetworks);
-        else unit = new Client();
+        try {
+            this.isServer = isServer;
+            localNetworks = getLocalNetworks();
+            unit = isServer? new Server(this): new Client(this);
+        } catch (ConnectionError e) {
+            throw e;
+        }
     }
 
 
-    private HashMap<String, InetAddress> getLocalNetworks() throws ConnectionError {
-        HashMap<String, InetAddress> localNetworks = new HashMap<>();
+    private Map<IPWrapper, InterfaceAddress> getLocalNetworks() throws ConnectionError {
+        HashMap<IPWrapper, InterfaceAddress> localNetworks = new HashMap<>();
         try {
             Enumeration<NetworkInterface> nis = NetworkInterface.getNetworkInterfaces();
             while (nis.hasMoreElements()) {
@@ -33,12 +38,12 @@ public class Connection {
                 for (InterfaceAddress ia : ni.getInterfaceAddresses()) {
                     String hostAddress = ia.getAddress().getHostAddress();
                     if (hostAddress.matches("\\d+\\.\\d+\\.\\d+\\.\\d+")) {
-                        localNetworks.put(hostAddress, ia.getAddress());
+                        localNetworks.put(new IPWrapper(ia.getBroadcast().getAddress()), ia);
                     }
                 }
             }
             if (localNetworks.isEmpty()) throw new ConnectionError();
-            return localNetworks;
+            return Collections.unmodifiableMap(localNetworks);
         } catch (SocketException e) {
             throw new ConnectionError();
         }
