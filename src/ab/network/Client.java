@@ -4,8 +4,8 @@ import java.io.IOException;
 
 public class Client extends NetworkUnit {
 
-    public Client(Connection connection) {
-        super(connection);
+    public Client(ConnectionManager connectionManager) {
+        super(connectionManager);
     }
 
     @Override
@@ -13,7 +13,13 @@ public class Client extends NetworkUnit {
 
     }
 
-    class ClientHandler extends Handler {
+    class ClientConnectionBuilder extends ConnectionBuilder {
+
+        @Override
+        void launch() {
+
+        }
+
         @Override
         public void run() {
 

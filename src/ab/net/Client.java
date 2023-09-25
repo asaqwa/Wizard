@@ -60,7 +60,7 @@ public class Client extends NetworkUnit {
             while (true) {
                 Message serverReply = receive();
                 if (serverReply.getType() == NAME_REQUEST) {
-                    send(new Message("Player_", USER_NAME));
+//                    send(new Message("Player_", USER_NAME));
                 } else if (serverReply.getType() == NAME_ACCEPTED) {
 //                    notifyConnectionStatusChanged(true);
                     return;

@@ -3,13 +3,18 @@ package ab.network;
 import java.io.Closeable;
 
 public abstract class NetworkUnit implements Closeable {
-    final Connection connection;
+    final ConnectionManager connectionManager;
 
-    public NetworkUnit(Connection connection) {
-        this.connection = connection;
+    public NetworkUnit(ConnectionManager connectionManager) {
+        this.connectionManager = connectionManager;
     }
 
-    abstract class Handler extends Thread implements Closeable {}
+    abstract class ConnectionBuilder extends Thread implements Closeable {
+
+        abstract void launch();
+    }
 
     abstract class BrdListener extends Thread implements Closeable {}
+
+    abstract class Handler extends Thread implements Closeable {}
 }

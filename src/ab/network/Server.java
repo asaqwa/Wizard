@@ -1,5 +1,6 @@
 package ab.network;
 
+import ab.model.chat.Message;
 import ab.network.exceptions.ConnectionError;
 
 import java.io.IOException;
@@ -8,21 +9,23 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import static ab.model.chat.MessageType.*;
+
 public class Server extends NetworkUnit {
-    HashMap<IPWrapper, Handler> handlers;
-    ArrayList<Socket> establishedConnections = new ArrayList<>();
+    HashMap<IPWrapper, ConnectionBuilder> handlers;
+    ArrayList<java.net.Socket> establishedConnections = new ArrayList<>();
 
 
-    public Server(Connection connection) throws ConnectionError {
-        super(connection);
+    public Server(ConnectionManager connectionManager) throws ConnectionError {
+        super(connectionManager);
         initHandlers();
-        handlers.values().forEach(Handler::start);
+        handlers.values().forEach(ConnectionBuilder::launch);
     }
 
     private void initHandlers() throws ConnectionError {
-        for (Map.Entry<IPWrapper, InterfaceAddress> localNetwork : connection.localNetworks.entrySet()) {
+        for (Map.Entry<IPWrapper, InterfaceAddress> localNetwork : connectionManager.localNetworks.entrySet()) {
             try {
-                handlers.put(localNetwork.getKey(), new ServerHandler(localNetwork.getValue()));
+                handlers.put(localNetwork.getKey(), new ServerConnectionBuilder(localNetwork.getValue()));
             } catch (IOException ignore) {}
         }
         if (handlers.isEmpty()) throw new ConnectionError();
@@ -30,26 +33,35 @@ public class Server extends NetworkUnit {
 
     @Override
     public void close() {
-        for (Handler handler: handlers.values()) {
+        for (ConnectionBuilder connectionBuilder : handlers.values()) {
             try {
-                handler.close();
+                connectionBuilder.close();
             } catch (IOException ignore) {}
         }
     }
 
-    class ServerHandler extends Handler {
+    class ServerConnectionBuilder extends ConnectionBuilder {
         private final ServerSocket socket;
         private final ServerBrdListener brdListener;
 
-        ServerHandler(InterfaceAddress ia) throws IOException {
+        ServerConnectionBuilder(InterfaceAddress ia) throws IOException {
             socket = new ServerSocket(0, 20, ia.getAddress());
-            brdListener = new ServerBrdListener(ia, getReply());
-            brdListener.start();
+            try {
+                brdListener = new ServerBrdListener(ia, getReply());
+            } catch (IOException e) {
+                socket.close();
+                throw e;
+            }
         }
 
         byte[] getReply() {
             byte[] ip = socket.getInetAddress().getAddress();
             return new byte[] {ip[0],ip[1],ip[2],ip[3],(byte)(socket.getLocalPort()>>>8),(byte)socket.getLocalPort()};
+        }
+
+        public void launch() {
+            brdListener.start();
+            start();
         }
 
         @Override
@@ -104,6 +116,56 @@ public class Server extends NetworkUnit {
         public void close() {
             if (receiver != null) receiver.close();
             if (sender != null) sender.close();
+        }
+    }
+
+    class ConnectionHandler extends Handler {
+        Socket socket;
+
+        public ConnectionHandler(Socket socket) {
+            this.socket = socket;
+        }
+
+        @Override
+        public void run() {
+            String userName = null;
+            try (Connection connection = new Connection(socket)) {
+                userName = serverHandshake(connection);
+                connectionManager.addConnection(userName, connection);
+                serverMainLoop(connection, userName);
+            } catch (IOException | ClassNotFoundException e) {
+                //
+            } finally {
+                if (userName != null) {
+                    connectionManager.removeConnection(userName);
+                }
+            }
+
+        }
+
+        private String serverHandshake(Connection connection) throws IOException, ClassNotFoundException {
+            while (true) {
+                connection.send(Message.NAME_REQUEST);
+                Message reply = connection.receive();
+                if (reply == null || USER_NAME != reply.getType() || reply.getData().isEmpty()) continue;
+                if (connectionManager.connections.containsKey(reply.getData())) {
+                    connection.send(new Message(NAME_REQUEST, reply.getData()));
+                } else {
+                    connection.send(Message.NAME_ACCEPTED);
+                    return reply.getData();
+                }
+            }
+        }
+
+        private void serverMainLoop(Connection connection, String userName) throws IOException, ClassNotFoundException {
+            while (true) {
+                connectionManager.messageController.add(connection.receive());
+            }
+        }
+
+        @Override
+        public void close() throws IOException {
+
         }
     }
 }

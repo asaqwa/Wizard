@@ -1,51 +1,36 @@
 package ab.network;
 
-import ab.network.exceptions.ConnectionError;
+import ab.model.chat.Message;
 
-import java.net.InterfaceAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
 
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
+public class Connection implements Closeable {
+    private final Socket socket;
+    private final ObjectInputStream in;
+    private final ObjectOutputStream out;
 
-public class Connection {
-    final Map<IPWrapper, InterfaceAddress> localNetworks;
-
-    private final boolean isServer;
-    private final NetworkUnit unit;
-
-    public Connection(boolean isServer) throws ConnectionError {
-        try {
-            this.isServer = isServer;
-            localNetworks = getLocalNetworks();
-            unit = isServer? new Server(this): new Client(this);
-        } catch (ConnectionError e) {
-            throw e;
-        }
+    public Connection(java.net.Socket socket) throws IOException {
+        this.socket = socket;
+        in = new ObjectInputStream(socket.getInputStream());
+        out = new ObjectOutputStream(socket.getOutputStream());
     }
 
+    void send(Message message) throws IOException {
+        out.writeObject(message);
+    }
 
-    private Map<IPWrapper, InterfaceAddress> getLocalNetworks() throws ConnectionError {
-        HashMap<IPWrapper, InterfaceAddress> localNetworks = new HashMap<>();
-        try {
-            Enumeration<NetworkInterface> nis = NetworkInterface.getNetworkInterfaces();
-            while (nis.hasMoreElements()) {
-                NetworkInterface ni = nis.nextElement();
-                if (ni.isLoopback() || !ni.isUp() || ni.getDisplayName().toLowerCase().contains("host-only")) continue;
-                for (InterfaceAddress ia : ni.getInterfaceAddresses()) {
-                    String hostAddress = ia.getAddress().getHostAddress();
-                    if (hostAddress.matches("\\d+\\.\\d+\\.\\d+\\.\\d+")) {
-                        localNetworks.put(new IPWrapper(ia.getBroadcast().getAddress()), ia);
-                    }
-                }
-            }
-            if (localNetworks.isEmpty()) throw new ConnectionError();
-            return Collections.unmodifiableMap(localNetworks);
-        } catch (SocketException e) {
-            throw new ConnectionError();
-        }
+    Message receive() throws IOException, ClassNotFoundException {
+        return (Message) in.readObject();
+    }
+
+    @Override
+    public void close() throws IOException {
+        socket.close();
+        in.close();
+        out.close();
     }
 }
