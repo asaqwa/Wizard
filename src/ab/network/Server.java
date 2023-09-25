@@ -14,10 +14,12 @@ import static ab.model.chat.MessageType.*;
 public class Server extends NetworkUnit {
     HashMap<IPWrapper, ConnectionBuilder> handlers;
     ArrayList<java.net.Socket> establishedConnections = new ArrayList<>();
+    String serverName;
 
 
-    public Server(ConnectionManager connectionManager) throws ConnectionError {
+    public Server(ConnectionManager connectionManager, String serverName) throws ConnectionError {
         super(connectionManager);
+        this.serverName = serverName;
         initHandlers();
         handlers.values().forEach(ConnectionBuilder::launch);
     }
@@ -68,7 +70,8 @@ public class Server extends NetworkUnit {
         public void run() {
             while (!isInterrupted()) {
                 try {
-                    establishedConnections.add(socket.accept());
+                    Socket newConnection = socket.accept();
+                    new ConnectionHandler(newConnection).start();
                 } catch (IOException ignore) {}
             }
         }

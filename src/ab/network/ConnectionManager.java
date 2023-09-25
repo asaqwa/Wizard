@@ -18,15 +18,23 @@ public class ConnectionManager {
     final Map<String, Connection> connections = new ConcurrentHashMap<>();
     final MessageController messageController;
 
-    private final boolean isServer;
     private final NetworkUnit unit;
 
-    public ConnectionManager(boolean isServer, MessageController messageController) throws ConnectionError {
+    public ConnectionManager(MessageController messageController, String serverName) throws ConnectionError {
         try {
             this.messageController = messageController;
-            this.isServer = isServer;
             localNetworks = getLocalNetworks();
-            unit = isServer? new Server(this): new Client(this);
+            unit = new Server(this, serverName);
+        } catch (ConnectionError e) {
+            throw e;
+        }
+    }
+
+    public ConnectionManager(MessageController messageController) throws ConnectionError {
+        try {
+            this.messageController = messageController;
+            localNetworks = getLocalNetworks();
+            unit = new Client(this);
         } catch (ConnectionError e) {
             throw e;
         }
