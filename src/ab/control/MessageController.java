@@ -10,6 +10,7 @@ public class MessageController {
 
     public synchronized void add(Message message) {
         messages.add(message);
+        notify();
     }
 
 }

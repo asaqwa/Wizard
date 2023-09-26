@@ -8,16 +8,19 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static ab.model.chat.MessageType.*;
 
 public class Server extends NetworkUnit {
     HashMap<IPWrapper, ConnectionBuilder> handlers;
+    final Map<String, Connection> connections = new ConcurrentHashMap<>();
     ArrayList<java.net.Socket> establishedConnections = new ArrayList<>();
     String serverName;
+    String password = "";
 
 
-    public Server(ConnectionManager connectionManager, String serverName) throws ConnectionError {
+    public Server(ConnectionManager connectionManager, String serverName, String password) throws ConnectionError {
         super(connectionManager);
         this.serverName = serverName;
         initHandlers();
@@ -47,7 +50,7 @@ public class Server extends NetworkUnit {
         private final ServerBrdListener brdListener;
 
         ServerConnectionBuilder(InterfaceAddress ia) throws IOException {
-            socket = new ServerSocket(0, 20, ia.getAddress());
+            socket = new ServerSocket(0, 30, ia.getAddress());
             try {
                 brdListener = new ServerBrdListener(ia, getReply());
             } catch (IOException e) {
@@ -92,6 +95,7 @@ public class Server extends NetworkUnit {
             receiver = new DatagramSocket(19819, ia.getAddress());
             sender = getSender(ia);
             this.reply = reply;
+            setDaemon(true);
         }
 
         private DatagramSocket getSender(InterfaceAddress ia) throws ConnectionError {
@@ -127,31 +131,51 @@ public class Server extends NetworkUnit {
 
         public ConnectionHandler(Socket socket) {
             this.socket = socket;
+            setDaemon(true);
         }
 
         @Override
         public void run() {
             String userName = null;
             try (Connection connection = new Connection(socket)) {
+                checkPassword(connection);
                 userName = serverHandshake(connection);
-                connectionManager.addConnection(userName, connection);
+                connections.put(userName, connection);
                 serverMainLoop(connection, userName);
             } catch (IOException | ClassNotFoundException e) {
                 //
             } finally {
                 if (userName != null) {
-                    connectionManager.removeConnection(userName);
+                    connections.remove(userName);
                 }
             }
 
         }
 
-        private String serverHandshake(Connection connection) throws IOException, ClassNotFoundException {
-            while (true) {
-                connection.send(Message.NAME_REQUEST);
+        private void checkPassword(Connection connection) throws IOException, ClassNotFoundException {
+            for (int i = 0; i < 5; i++) {
+                connection.send(Message.PASSWORD_REQUEST);
                 Message reply = connection.receive();
-                if (reply == null || USER_NAME != reply.getType() || reply.getData().isEmpty()) continue;
-                if (connectionManager.connections.containsKey(reply.getData())) {
+                if (reply == null || PASSWORD_REQUEST != reply.getType() || reply.getData().isEmpty()) {
+                    continue;
+                }
+                if (password.equals(reply.getData())) {
+                    connection.send(new Message(NAME_REQUEST, reply.getData()));
+                    return;
+                }
+            }
+            connection.send(Message.CONNECTION_REJECTED);
+        }
+
+        private String serverHandshake(Connection connection) throws IOException, ClassNotFoundException {
+            connection.send(Message.NAME_REQUEST);
+            while (true) {
+                Message reply = connection.receive();
+                if (reply == null || USER_NAME != reply.getType() || reply.getData().isEmpty()) {
+                    connection.send(Message.NAME_REQUEST);
+                    continue;
+                }
+                if (connections.containsKey(reply.getData())) {
                     connection.send(new Message(NAME_REQUEST, reply.getData()));
                 } else {
                     connection.send(Message.NAME_ACCEPTED);

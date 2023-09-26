@@ -1,26 +1,32 @@
 package ab.network;
 
-import ab.network.exceptions.ConnectionError;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Queue;
+import java.util.concurrent.*;
 
 public class TestConnection {
-    public static void main(String[] args) throws ConnectionError {
-//        Connection server = new Connection(true);
+    static long startTime = System.currentTimeMillis();
+    static Object monitor = new Object();
 
-        for (int i = 1; i < 3000; i+=256) {
-            byte [] ar = get(i);
-            String s = i + " " + Integer.toBinaryString(ar[0]&255) + " " +
-                    Integer.toBinaryString(ar[1]&255) + " " + Arrays.toString(get(i));
-            System.out.println(
-                    s
-            );
+    public static void main(String[] args) {
+
+
+    }
+
+    static String getTime() {
+        long l = System.currentTimeMillis() - startTime;
+        return String.format("%4s:%03d | ", l/1000, l%1000);
+    }
+
+    public static void print(String s) {
+        synchronized (monitor) {
+            System.out.println(getTime() + Thread.currentThread().getName() + " " + s);
         }
-
     }
 
-    static byte[] get (int socket) {
-        return  new byte[] {(byte) (socket>>8), (byte) socket};
-    }
 }
