@@ -9,6 +9,8 @@ public abstract class NetworkUnit implements Closeable {
         this.connectionManager = connectionManager;
     }
 
+    abstract void launch();
+
     abstract class ConnectionBuilder extends Thread implements Closeable {
 
         abstract void launch();

@@ -4,10 +4,7 @@ import ab.control.MessageController;
 import ab.network.exceptions.ConnectionError;
 
 import java.io.IOException;
-import java.net.InterfaceAddress;
-import java.net.NetworkInterface;
-import java.net.SocketAddress;
-import java.net.SocketException;
+import java.net.*;
 
 import java.util.Collections;
 import java.util.Enumeration;
@@ -33,14 +30,16 @@ public class ConnectionManager {
     public void setServerUnit(String serverName, String password) throws ConnectionError {
         closeCurrentUnit();
         unit = new Server(this, serverName, password);
+        unit.launch();
     }
 
     public void setClientUnit(InterfaceAddress ia, SocketAddress serverSocket) {
         closeCurrentUnit();
         unit = new Client(this);
+        unit.launch();
     }
 
-    public void setServerFinder() {
+    public void setServerFinder() throws UnknownHostException {
         closeCurrentUnit();
         unit = new ClientServerFinder(this);
     }

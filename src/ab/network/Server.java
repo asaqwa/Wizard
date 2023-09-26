@@ -24,6 +24,10 @@ public class Server extends NetworkUnit {
         super(connectionManager);
         this.serverName = serverName;
         initHandlers();
+    }
+
+    @Override
+    void launch() {
         handlers.values().forEach(ConnectionBuilder::launch);
     }
 

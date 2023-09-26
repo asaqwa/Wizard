@@ -1,38 +1,37 @@
 package ab.test;
 
+import ab.network.Connection;
+
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-public class ThreadPoolTester {
+public class MultipleResourcesPoolTester {
     static long startTime = System.currentTimeMillis();
     static Object monitor = new Object();
 
     public static void main(String[] args) {
         ArrayBlockingQueue<Runnable> queue = new ArrayBlockingQueue<>(50);
 
-        ThreadPoolExecutor executor = new ThreadPoolExecutor(0, 50,30L,
+        List<Connection> connections = IntStream.range(0,5).mapToObj(i->new Connection()).collect(Collectors.toList());
+
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 50,30L,
                 TimeUnit.MINUTES, queue); //, TestConnection::getDaemonThread);
-        for (int i = 0; i < 50; i++) {
-            executor.execute(new Task("task-" + i));
-            if (i<4) executor.setCorePoolSize(i);
-        }
+        executor.execute(new Task(connections));
+
         try {
-            Thread.sleep(7000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        executor.setCorePoolSize(5);
-        print("poolSize 5");
-        try {
-            Thread.sleep(4000);
+            Thread.sleep(3000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
         executor.shutdownNow();
         print("shutdown");
         try {
-            Thread.sleep(4000);
+            Thread.sleep(3000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -57,14 +56,15 @@ public class ThreadPoolTester {
     }
 
     static class Task extends Thread {
+        List<Connection> connections;
 
-        public Task(String name) {
-            super(name);
+        public Task(List<Connection> connections) {
+            this.connections = connections;
         }
 
         @Override
         public void run() {
-            try (Glose glose = new Glose()) {
+            try (ConnectionsArray ca = new ConnectionsArray(connections)) {
                 print("is ready");
                 try {
                     sleep(10000);
@@ -78,7 +78,22 @@ public class ThreadPoolTester {
         }
     }
 
-    static class Glose implements Closeable {
+    static class ConnectionsArray implements Closeable {
+        List<Connection> connections;
+
+        public ConnectionsArray(List<Connection> connections) {
+            this.connections = connections;
+        }
+
+        @Override
+        public void close() throws IOException {
+            for (Connection connection : connections) {
+                connection.close();
+            }
+        }
+    }
+
+    static class Connection implements Closeable {
 
         @Override
         public void close() throws IOException {
