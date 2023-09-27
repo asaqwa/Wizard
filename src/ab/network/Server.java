@@ -6,35 +6,34 @@ import ab.network.exceptions.ConnectionError;
 import java.io.IOException;
 import java.net.*;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static ab.model.chat.MessageType.*;
 
 public class Server extends NetworkUnit {
-    HashMap<IPWrapper, ConnectionBuilder> handlers;
+    ArrayList<ConnectionBuilder> handlers;
     final Map<String, Connection> connections = new ConcurrentHashMap<>();
-    ArrayList<java.net.Socket> establishedConnections = new ArrayList<>();
     String serverName;
     String password = "";
 
 
-    public Server(ConnectionManager connectionManager, String serverName, String password) throws ConnectionError {
-        super(connectionManager);
+    public Server(NetworkController networkController, String serverName, String password) throws ConnectionError {
+        super(networkController);
         this.serverName = serverName;
+        this.password = password;
         initHandlers();
     }
 
     @Override
     void launch() {
-        handlers.values().forEach(ConnectionBuilder::launch);
+        handlers.forEach(ConnectionBuilder::launch);
     }
 
     private void initHandlers() throws ConnectionError {
-        for (Map.Entry<IPWrapper, InterfaceAddress> localNetwork : connectionManager.localNetworks.entrySet()) {
+        for (InterfaceAddress localNetwork : networkController.localNetworks) {
             try {
-                handlers.put(localNetwork.getKey(), new ServerConnectionBuilder(localNetwork.getValue()));
+                handlers.add(new ServerConnectionBuilder(localNetwork));
             } catch (IOException ignore) {}
         }
         if (handlers.isEmpty()) throw new ConnectionError();
@@ -42,7 +41,7 @@ public class Server extends NetworkUnit {
 
     @Override
     public void close() {
-        for (ConnectionBuilder connectionBuilder : handlers.values()) {
+        for (ConnectionBuilder connectionBuilder : handlers) {
             try {
                 connectionBuilder.close();
             } catch (IOException ignore) {}
@@ -142,10 +141,11 @@ public class Server extends NetworkUnit {
         public void run() {
             String userName = null;
             try (Connection connection = new Connection(socket)) {
-                checkPassword(connection);
-                userName = serverHandshake(connection);
-                connections.put(userName, connection);
-                serverMainLoop(connection, userName);
+                if (serverIfPasswordCorrect(connection)) {
+                    userName = serverHandshake(connection);
+                    connections.put(userName, connection);
+                    serverMainLoop(connection, userName);
+                }
             } catch (IOException | ClassNotFoundException e) {
                 //
             } finally {
@@ -156,23 +156,23 @@ public class Server extends NetworkUnit {
 
         }
 
-        private void checkPassword(Connection connection) throws IOException, ClassNotFoundException {
-            for (int i = 0; i < 5; i++) {
+        private boolean serverIfPasswordCorrect(Connection connection) throws IOException, ClassNotFoundException {
+            for (int i = 0; i < 6; i++) {
                 connection.send(Message.PASSWORD_REQUEST);
                 Message reply = connection.receive();
-                if (reply == null || PASSWORD_REQUEST != reply.getType() || reply.getData().isEmpty()) {
+                if (reply == null || PASSWORD_REPLY != reply.getType() || reply.getData().isEmpty()) {
                     continue;
                 }
                 if (password.equals(reply.getData())) {
-                    connection.send(new Message(NAME_REQUEST, reply.getData()));
-                    return;
+                    connection.send(Message.PASSWORD_ACCEPTED);
+                    return true;
                 }
             }
             connection.send(Message.CONNECTION_REJECTED);
+            return false;
         }
 
         private String serverHandshake(Connection connection) throws IOException, ClassNotFoundException {
-            connection.send(Message.NAME_REQUEST);
             while (true) {
                 Message reply = connection.receive();
                 if (reply == null || USER_NAME != reply.getType() || reply.getData().isEmpty()) {
@@ -190,7 +190,7 @@ public class Server extends NetworkUnit {
 
         private void serverMainLoop(Connection connection, String userName) throws IOException, ClassNotFoundException {
             while (true) {
-                connectionManager.messageController.add(connection.receive());
+                networkController.messageController.add(connection.receive());
             }
         }
 

@@ -1,30 +1,29 @@
 package ab.network;
 
+import ab.control.Controller;
 import ab.control.MessageController;
 import ab.network.exceptions.ConnectionError;
 
 import java.io.IOException;
 import java.net.*;
 
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
-public class ConnectionManager {
-    final Map<IPWrapper, InterfaceAddress> localNetworks;
+public class NetworkController {
+    final ArrayList<InterfaceAddress> localNetworks;
     final MessageController messageController;
+    private final Controller controller;
 
     private NetworkUnit unit;
 
-    public ConnectionManager(MessageController messageController) throws ConnectionError {
+    public NetworkController(MessageController messageController, Controller controller) throws ConnectionError {
         try {
-            this.messageController = messageController;
             localNetworks = getLocalNetworks();
-
         } catch (ConnectionError e) {
             throw e;
         }
+        this.controller = controller;
+        this.messageController = messageController;
     }
 
     public void setServerUnit(String serverName, String password) throws ConnectionError {
@@ -33,10 +32,14 @@ public class ConnectionManager {
         unit.launch();
     }
 
-    public void setClientUnit(InterfaceAddress ia, SocketAddress serverSocket) {
+    public void initNewClient(byte[] serverSocket, InterfaceAddress ia, String password) {
+        Client client = new Client(this, serverSocket, ia, password);
+        client.launch();
+    }
+
+    void setClientUnit(Client client) {
         closeCurrentUnit();
-        unit = new Client(this);
-        unit.launch();
+        unit = client;
     }
 
     public void setServerFinder() throws UnknownHostException {
@@ -55,8 +58,20 @@ public class ConnectionManager {
 
     }
 
-    private Map<IPWrapper, InterfaceAddress> getLocalNetworks() throws ConnectionError {
-        HashMap<IPWrapper, InterfaceAddress> localNetworks = new HashMap<>();
+    String getName(String oldName) {
+        return controller.getName(oldName);
+    }
+
+    String getNewPassword() {
+        return controller.getNewPassword();
+    }
+
+    public void wrongPassword() {
+        controller.wrongPassword();
+    }
+
+    private ArrayList<InterfaceAddress> getLocalNetworks() throws ConnectionError {
+        ArrayList<InterfaceAddress> localNetworks = new ArrayList<>();
         try {
             Enumeration<NetworkInterface> nis = NetworkInterface.getNetworkInterfaces();
             while (nis.hasMoreElements()) {
@@ -65,12 +80,12 @@ public class ConnectionManager {
                 for (InterfaceAddress ia : ni.getInterfaceAddresses()) {
                     String hostAddress = ia.getAddress().getHostAddress();
                     if (hostAddress.matches("\\d+\\.\\d+\\.\\d+\\.\\d+")) {
-                        localNetworks.put(new IPWrapper(ia.getBroadcast().getAddress()), ia);
+                        localNetworks.add(ia);
                     }
                 }
             }
             if (localNetworks.isEmpty()) throw new ConnectionError();
-            return Collections.unmodifiableMap(localNetworks);
+            return localNetworks;
         } catch (SocketException e) {
             throw new ConnectionError();
         }

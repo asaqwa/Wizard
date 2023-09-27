@@ -5,11 +5,11 @@ import java.net.SocketAddress;
 
 
 public class ServerFoundMessage extends Message {
-    private final SocketAddress serverSocket;
+    private final byte[] serverSocket;
     private final InterfaceAddress ia;
 
-    public ServerFoundMessage(MessageType type, String text, SocketAddress serverSocket, InterfaceAddress ia) {
-        super(type, text);
+    public ServerFoundMessage(MessageType type,  byte[] serverSocket, InterfaceAddress ia) {
+        super(type, null);
         this.serverSocket = serverSocket;
         this.ia = ia;
     }

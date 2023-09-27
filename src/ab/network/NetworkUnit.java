@@ -3,10 +3,11 @@ package ab.network;
 import java.io.Closeable;
 
 public abstract class NetworkUnit implements Closeable {
-    final ConnectionManager connectionManager;
+    final NetworkController networkController;
+    String userName = "";
 
-    public NetworkUnit(ConnectionManager connectionManager) {
-        this.connectionManager = connectionManager;
+    public NetworkUnit(NetworkController networkController) {
+        this.networkController = networkController;
     }
 
     abstract void launch();

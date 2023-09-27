@@ -66,4 +66,16 @@ public class Controller {
         rootLayout.setCenter(gamePane);
         rootLayout.setRight(gameStat);
     }
+
+    public String getNewPassword() {
+        return "";
+    }
+
+    public String getName(String oldName) {
+        return "";
+    }
+
+    public void wrongPassword() {
+        //new window;
+    }
 }

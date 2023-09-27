@@ -14,8 +14,8 @@ public class ClientServerFinder extends NetworkUnit {
     private DatagramPacket BRD_REQUEST = null;
     private ThreadPoolExecutor executor;
 
-    public ClientServerFinder(ConnectionManager connectionManager) throws UnknownHostException {
-        super(connectionManager);
+    public ClientServerFinder(NetworkController networkController) throws UnknownHostException {
+        super(networkController);
         BRD_REQUEST = new DatagramPacket(new byte[0], 0, InetAddress.getByName("255.255.255.255"), 19819);
         executor = new ThreadPoolExecutor(0, 50,30L,
                 TimeUnit.MINUTES, new ArrayBlockingQueue<>(50));
@@ -25,7 +25,7 @@ public class ClientServerFinder extends NetworkUnit {
     @Override
     void launch() {
         int i = 0;
-        for (InterfaceAddress ia : connectionManager.localNetworks.values()) {
+        for (InterfaceAddress ia : networkController.localNetworks) {
             try {
                 executor.execute(new ClientBrdListener(ia));
                 executor.setCorePoolSize(++i);
@@ -50,6 +50,7 @@ public class ClientServerFinder extends NetworkUnit {
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
+        executor.shutdownNow();
     }
 
     class ClientBrdListener implements Runnable {
@@ -65,8 +66,8 @@ public class ClientServerFinder extends NetworkUnit {
             try (DatagramSocket receiver = new DatagramSocket(19819, ia.getAddress())) {
                 while (true) {
                     receiver.receive(packet);
-                    connectionManager.messageController.add(new ServerFoundMessage(MessageType.SERVER_FOUND,
-                            new String(packet.getData()), packet.getSocketAddress(), ia));
+                    networkController.messageController.add(new ServerFoundMessage(MessageType.SERVER_FOUND,
+                            packet.getData(), ia));
                 }
             } catch (IOException ignore) {
             }
@@ -74,7 +75,7 @@ public class ClientServerFinder extends NetworkUnit {
     }
 
     class ClientBrdSender implements Runnable {
-        private final DatagramSocket[] senderSockets = connectionManager.localNetworks.values().stream()
+        private final DatagramSocket[] senderSockets = networkController.localNetworks.stream()
                 .map(ClientServerFinder.this::getSender).toArray(DatagramSocket[]::new);
 
         @Override
