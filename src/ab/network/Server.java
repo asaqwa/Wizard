@@ -8,10 +8,11 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import static ab.model.chat.MessageType.*;
 
-public class Server extends NetworkUnit {
+public class Server extends PrimaryNetworkUnit {
     ArrayList<ConnectionBuilder> handlers;
     final Map<String, Connection> connections = new ConcurrentHashMap<>();
     String serverName;
@@ -45,6 +46,30 @@ public class Server extends NetworkUnit {
             try {
                 connectionBuilder.close();
             } catch (IOException ignore) {}
+        }
+    }
+
+    class ServerSocketHandler implements Runnable {
+        private final InterfaceAddress ia;
+
+        public ServerSocketHandler(InterfaceAddress ia) {
+            this.ia = ia;
+        }
+
+        byte[] getReply(ServerSocket socket) {
+            byte[] ip = socket.getInetAddress().getAddress();
+            return new byte[] {ip[0],ip[1],ip[2],ip[3],(byte)(socket.getLocalPort()>>>8),(byte)socket.getLocalPort()};
+        }
+
+        @Override
+        public void run() {
+            try (ServerSocket serverSocket = new ServerSocket(0, 30, ia.getAddress())) {
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+
+            }
         }
     }
 

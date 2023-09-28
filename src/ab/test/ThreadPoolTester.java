@@ -2,23 +2,42 @@ package ab.test;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.ServerSocket;
+import java.util.ArrayList;
 import java.util.concurrent.*;
+
+
+/*
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+
+public class Util {
+
+
+    static Thread getDaemonThread(Runnable r) {
+        Thread t = factory.newThread(r);
+        t.setDaemon(true);
+        return t;
+    }
+}
+*/
 
 public class ThreadPoolTester {
     static long startTime = System.currentTimeMillis();
-    static Object monitor = new Object();
+    static final Object monitor = new Object();
+    static ArrayList<Closeable> list = new ArrayList<>();
+    private static final ThreadFactory factory = Executors.defaultThreadFactory();
 
     public static void main(String[] args) {
-        ArrayBlockingQueue<Runnable> queue = new ArrayBlockingQueue<>(50);
-
+        ArrayList<Closeable> list = ThreadPoolTester.list;
         ThreadPoolExecutor executor = new ThreadPoolExecutor(0, 50,30L,
-                TimeUnit.MINUTES, queue); //, TestConnection::getDaemonThread);
-        for (int i = 0; i < 50; i++) {
-            executor.execute(new Task("task-" + i));
-            if (i<4) executor.setCorePoolSize(i);
-        }
+                TimeUnit.MINUTES, new ArrayBlockingQueue<>(50), ThreadPoolTester::getDaemonThread);
+        launch(executor, 1, true);
+        launch(executor, 10, false);
         try {
-            Thread.sleep(7000);
+            Thread.sleep(3000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -29,18 +48,43 @@ public class ThreadPoolTester {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        executor.shutdownNow();
+//        executor.shutdownNow();
+        shutDown(executor);
         print("shutdown");
         try {
-            Thread.sleep(4000);
+            Thread.sleep(3000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+        print("pollSize 0");
+        executor.setCorePoolSize(0);
+        ThreadPoolTester.list = list;
+        launchGlose(executor, 3, true);
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        executor.shutdownNow();
         print("is finished");
     }
 
+    static void launch(ThreadPoolExecutor executor, int limit, boolean changeThreadNumber) {
+        for (int i = 1; i <= limit; i++) {
+            executor.execute(new Task("task-" + i, executor));
+            if (changeThreadNumber) executor.setCorePoolSize(executor.getCorePoolSize()+1);
+        }
+    }
+
+    static void launchGlose(ThreadPoolExecutor executor, int limit, boolean changeThreadNumber) {
+        for (int i = 1; i <= limit; i++) {
+            executor.execute(new GloseTask("GLOSE-" + i, executor));
+            if (changeThreadNumber) executor.setCorePoolSize(executor.getCorePoolSize()+1);
+        }
+    }
+
     static Thread getDaemonThread(Runnable r) {
-        Thread t = Executors.defaultThreadFactory().newThread(r);
+        Thread t = factory.newThread(r);
         t.setDaemon(true);
         return t;
     }
@@ -56,24 +100,73 @@ public class ThreadPoolTester {
         }
     }
 
-    static class Task extends Thread {
+    public static void addClosable(Closeable task) {
+        synchronized (list) {
+            list.add(task);
+        }
+    }
 
-        public Task(String name) {
-            super(name);
+    public static void shutDown(ThreadPoolExecutor executor) {
+        synchronized (list) {
+            executor.getQueue().forEach(executor::remove);
+            for (Closeable closeable : list) {
+                try {
+                    closeable.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            list = null;
+        }
+    }
+
+    static class Task implements Runnable {
+        ThreadPoolExecutor executor;
+        String name;
+        public Task(String name, ThreadPoolExecutor executor) {
+            this.name = name;
+            this.executor = executor;
         }
 
         @Override
         public void run() {
-            try (Glose glose = new Glose()) {
-                print("is ready");
-                try {
-                    sleep(10000);
-                } catch (InterruptedException e) {
-                    print("interrupted");
-                }
-                print("ends");
-            } catch (IOException e) {
-                e.printStackTrace();
+            try (ServerSocket socket = new ServerSocket(0, 5, InetAddress.getLoopbackAddress())) {
+                addClosable(socket);
+                String s = String.format("%s is STARTED, getTaskCount %s, getActiveCount %s, getCompletedTaskCount %s, getCorePoolSize %s, getPoolSize %s", name, executor.getTaskCount(), executor.getActiveCount(), executor.getCompletedTaskCount(), executor.getCorePoolSize(), executor.getPoolSize());
+                print(s);
+//                socket.setSoTimeout(5000);
+                socket.accept();
+
+            } catch (IOException | NullPointerException e) {
+                print(name + " exception caught: " + e.getClass().getSimpleName());
+            } finally {
+                String s = String.format("%s is FINISHED, getTaskCount %s, getActiveCount %s, getCompletedTaskCount %s, getCorePoolSize %s, getPoolSize %s", name, executor.getTaskCount(), executor.getActiveCount(), executor.getCompletedTaskCount(), executor.getCorePoolSize(), executor.getPoolSize());
+                print(s);
+            }
+        }
+    }
+
+    static class GloseTask implements Runnable {
+        ThreadPoolExecutor executor;
+        String name;
+        public GloseTask(String name, ThreadPoolExecutor executor) {
+            this.name = name;
+            this.executor = executor;
+        }
+
+        @Override
+        public void run() {
+            try (Glose gl = new Glose()) {
+                addClosable(gl);
+                String s = String.format("%s is STARTED, getTaskCount %s, getActiveCount %s, getCompletedTaskCount %s, getCorePoolSize %s, getPoolSize %s", name, executor.getTaskCount(), executor.getActiveCount(), executor.getCompletedTaskCount(), executor.getCorePoolSize(), executor.getPoolSize());
+                print(s);
+                Thread.sleep(5000);
+
+            } catch (IOException | NullPointerException | InterruptedException e) {
+                print(name + " exception caught: " + e.getClass().getSimpleName());
+            } finally {
+                String s = String.format("%s is FINISHED, getTaskCount %s, getActiveCount %s, getCompletedTaskCount %s, getCorePoolSize %s, getPoolSize %s", name, executor.getTaskCount(), executor.getActiveCount(), executor.getCompletedTaskCount(), executor.getCorePoolSize(), executor.getPoolSize());
+                print(s);
             }
         }
     }

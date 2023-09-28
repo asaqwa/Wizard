@@ -2,61 +2,39 @@ package ab.network;
 
 import ab.model.chat.MessageType;
 import ab.model.chat.ServerFoundMessage;
+import ab.network.exceptions.ConnectionError;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 public class ClientServerFinder extends NetworkUnit {
-    private DatagramPacket BRD_REQUEST = null;
-    private ThreadPoolExecutor executor;
+    private final DatagramPacket BRD_REQUEST;
 
     public ClientServerFinder(NetworkController networkController) throws UnknownHostException {
         super(networkController);
         BRD_REQUEST = new DatagramPacket(new byte[0], 0, InetAddress.getByName("255.255.255.255"), 19819);
-        executor = new ThreadPoolExecutor(0, 50,30L,
-                TimeUnit.MINUTES, new ArrayBlockingQueue<>(50));
-
+        threadPool.setMaximumPoolSize(networkController.localNetworks.size()+1);
     }
 
     @Override
-    void launch() {
-        int i = 0;
+    void launch() throws ConnectionError {
         for (InterfaceAddress ia : networkController.localNetworks) {
-            try {
-                executor.execute(new ClientBrdListener(ia));
-                executor.setCorePoolSize(++i);
-            } catch (IOException ignore) {}
-        executor.execute(new ClientBrdSender());
+            startTask(new ClientBrdReceiverCell(ia));
+            if (getCorePoolSize() == 0) throw new ConnectionError();
+            startTask(new ClientBrdSenderCell());
         }
-    }
-
-    private DatagramSocket getSender(InterfaceAddress ia) {
-        for (int port = 19820; port <= 65536; port++) {
-            try {
-                return new DatagramSocket(port, ia.getAddress());
-            } catch (SocketException ignore) {}
-        }
-        return null;
     }
 
     @Override
-    public void close() throws IOException {
-        try {
-            this.finalize();
-        } catch (Throwable e) {
-            throw new RuntimeException(e);
-        }
-        executor.shutdownNow();
+    public void close() {
+        super.close();
     }
 
-    class ClientBrdListener implements Runnable {
+    class ClientBrdReceiverCell implements Runnable {
         private final InterfaceAddress ia;
 
-        ClientBrdListener(InterfaceAddress ia) throws IOException {
+        ClientBrdReceiverCell(InterfaceAddress ia) {
             this.ia = ia;
         }
 
@@ -64,7 +42,8 @@ public class ClientServerFinder extends NetworkUnit {
         public void run() {
             DatagramPacket packet = new DatagramPacket(new byte[0], 0);
             try (DatagramSocket receiver = new DatagramSocket(19819, ia.getAddress())) {
-                while (true) {
+                registerResource(receiver);
+                while (!Thread.currentThread().isInterrupted()) {
                     receiver.receive(packet);
                     networkController.messageController.add(new ServerFoundMessage(MessageType.SERVER_FOUND,
                             packet.getData(), ia));
@@ -74,38 +53,30 @@ public class ClientServerFinder extends NetworkUnit {
         }
     }
 
-    class ClientBrdSender implements Runnable {
+    class ClientBrdSenderCell implements Runnable {
         private final DatagramSocket[] senderSockets = networkController.localNetworks.stream()
-                .map(ClientServerFinder.this::getSender).toArray(DatagramSocket[]::new);
+                .map(this::createSender).toArray(DatagramSocket[]::new);
 
         @Override
         public void run() {
-            try (Closeable ignored = ()-> {for (DatagramSocket senderSocket: senderSockets) senderSocket.close();}) {
-                while (true) {
+            try (Closeable cell = ()-> {for (DatagramSocket senderSocket: senderSockets) senderSocket.close();}) {
+                registerResource(cell);
+                while (!Thread.currentThread().isInterrupted()) {
                     for (DatagramSocket sender: senderSockets) {
                         sender.send(BRD_REQUEST);
                     }
                     Thread.sleep(1500);
                 }
-            } catch (IOException | InterruptedException ignored) {}
-        }
-    }
-
-    class ClientConnectionBuilder extends ConnectionBuilder {
-
-        @Override
-        void launch() {
-
+            } catch (IOException | InterruptedException ignore) {}
         }
 
-        @Override
-        public void run() {
-
-        }
-
-        @Override
-        public void close() throws IOException {
-
+        private DatagramSocket createSender(InterfaceAddress ia) {
+            for (int port = 19820; port <= 65536; port++) {
+                try {
+                    return new DatagramSocket(port, ia.getAddress());
+                } catch (SocketException ignore) {}
+            }
+            return null;
         }
     }
 }

@@ -5,13 +5,14 @@ import ab.model.chat.Message;
 import java.io.IOException;
 import java.net.InterfaceAddress;
 import java.net.Socket;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import static ab.network.Util.*;
 import static ab.model.chat.MessageType.*;
 
-public class Client extends NetworkUnit {
-    private InterfaceAddress ia;
-    private byte[] serverSocket;
+public class Client extends PrimaryNetworkUnit {
+    private final InterfaceAddress ia;
+    private final byte[] serverSocket;
     private String password;
     private Connection connection;
 
@@ -29,8 +30,8 @@ public class Client extends NetworkUnit {
     }
 
     @Override
-    public void close() throws IOException {
-
+    public void close() {
+        super.close();
     }
 
     class ClientHandler extends Thread {

@@ -8,11 +8,15 @@ import java.io.IOException;
 import java.net.*;
 
 import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class NetworkController {
     final ArrayList<InterfaceAddress> localNetworks;
     final MessageController messageController;
     private final Controller controller;
+    private ThreadPoolExecutor threadPool;
 
     private NetworkUnit unit;
 
@@ -42,20 +46,26 @@ public class NetworkController {
         unit = client;
     }
 
-    public void setServerFinder() throws UnknownHostException {
+    public void setServerFinder() throws UnknownHostException, ConnectionError {
         closeCurrentUnit();
         unit = new ClientServerFinder(this);
+        unit.launch();
     }
 
     public void closeCurrentUnit() {
-        if (unit!=null) {
-            try {
-                unit.close();
-            } catch (IOException ignore) {}
+        if (unit != null) {
+            unit.close();
             unit = null;
             System.gc();
         }
 
+    }
+
+    public ThreadPoolExecutor getThreadPool() {
+        if (threadPool==null | threadPool.isShutdown()) {
+            threadPool = new ThreadPoolExecutor(0, 50,30L, TimeUnit.MINUTES, new ArrayBlockingQueue<>(50), Util::getDaemonThread);
+        }
+        return threadPool;
     }
 
     String getName(String oldName) {
