@@ -1,17 +1,18 @@
 package ab.view;
 
 import ab.control.Controller;
+import ab.control.ViewController;
 import javafx.fxml.FXML;
 
 public class GamePaneController {
-    Controller controller;
+    ViewController viewcontroller;
 
     @FXML
     private void handleStartScene() {
-        controller.setStart();
+        viewcontroller.setStart();
     }
 
-    public void setController(Controller controller){
-        this.controller = controller;
+    public void setController(ViewController viewcontroller){
+        this.viewcontroller = viewcontroller;
     }
 }

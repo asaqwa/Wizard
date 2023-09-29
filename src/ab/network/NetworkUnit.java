@@ -1,5 +1,6 @@
 package ab.network;
 
+import ab.model.chat.Message;
 import ab.network.exceptions.ConnectionError;
 
 import java.io.Closeable;
@@ -9,14 +10,15 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 public abstract class NetworkUnit implements Closeable {
     final NetworkController networkController;
-    final ThreadPoolExecutor threadPool;
-    ArrayList<Closeable> registeredResources = new ArrayList<>();
+    private final ThreadPoolExecutor threadPool;
+    private ArrayList<Closeable> registeredResources = new ArrayList<>();
 
     public NetworkUnit(NetworkController networkController) {
         this.networkController = networkController;
         threadPool = networkController.getThreadPool();
-        threadPool.setCorePoolSize(0);
     }
+
+    abstract void send(Message message);
 
     abstract void launch() throws ConnectionError;
 
@@ -39,7 +41,10 @@ public abstract class NetworkUnit implements Closeable {
 
     @Override
     public void close() {
+        int resAmount;
         synchronized (registeredResources) {
+            threadPool.getQueue().forEach(threadPool::remove);
+            resAmount = registeredResources.size();
             for (Closeable resource: registeredResources) {
                 try {
                     resource.close();
@@ -47,14 +52,8 @@ public abstract class NetworkUnit implements Closeable {
             }
             registeredResources = null;
         }
+        synchronized (threadPool) {
+            threadPool.setCorePoolSize(threadPool.getCorePoolSize()-resAmount);
+        }
     }
-
-    abstract class ConnectionBuilder extends Thread implements Closeable {
-
-        abstract void launch();
-    }
-
-    abstract class BrdListener extends Thread implements Closeable {}
-
-    abstract class Handler extends Thread implements Closeable {}
 }

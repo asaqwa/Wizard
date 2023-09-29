@@ -3,57 +3,73 @@ package ab.network;
 import ab.model.chat.Message;
 import ab.network.exceptions.ConnectionError;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadPoolExecutor;
 
 import static ab.model.chat.MessageType.*;
 
 public class Server extends PrimaryNetworkUnit {
-    ArrayList<ConnectionBuilder> handlers;
+    ArrayList<ServerSocketHandler> handlers;
     final Map<String, Connection> connections = new ConcurrentHashMap<>();
     String serverName;
     String password = "";
 
 
-    public Server(NetworkController networkController, String serverName, String password) throws ConnectionError {
+    public Server(NetworkController networkController, String serverName, String password) {
         super(networkController);
         this.serverName = serverName;
         this.password = password;
         initHandlers();
     }
 
+    private void initHandlers() {
+        networkController.localNetworks.forEach(ia -> handlers.add(new ServerSocketHandler(ia)));
+    }
+
+    @Override
+    void send(Message message) {
+        for (Map.Entry<String, Connection> c : connections.entrySet()) {
+            try {
+                c.getValue().send(message);
+            } catch (IOException e) {
+                networkController.messageController.add(new Message(CONNECTION_CLOSED, c.getKey()));
+                c.getValue().close();
+            }
+        }
+    }
+
     @Override
     void launch() {
-        handlers.forEach(ConnectionBuilder::launch);
-    }
-
-    private void initHandlers() throws ConnectionError {
-        for (InterfaceAddress localNetwork : networkController.localNetworks) {
-            try {
-                handlers.add(new ServerConnectionBuilder(localNetwork));
-            } catch (IOException ignore) {}
-        }
-        if (handlers.isEmpty()) throw new ConnectionError();
-    }
-
-    @Override
-    public void close() {
-        for (ConnectionBuilder connectionBuilder : handlers) {
-            try {
-                connectionBuilder.close();
-            } catch (IOException ignore) {}
-        }
+        handlers.forEach(this::startTask);
     }
 
     class ServerSocketHandler implements Runnable {
         private final InterfaceAddress ia;
 
-        public ServerSocketHandler(InterfaceAddress ia) {
+        ServerSocketHandler(InterfaceAddress ia) {
             this.ia = ia;
+        }
+
+        @Override
+        public void run() {
+            ServerBrdCell brdCell = null;
+            try (ServerSocket socket = new ServerSocket(0, 30, ia.getAddress())) {
+                registerResource(socket);
+                brdCell = new ServerBrdCell(getReply(socket));
+                startTask(brdCell);
+                while (!Thread.currentThread().isInterrupted()) {
+                    Socket newConnection = socket.accept();
+                    startTask(new ServerConnectionHandler(newConnection));
+                }
+            } catch (IOException ignore) {
+            } finally {
+                if (brdCell != null) brdCell.close();
+            }
+
         }
 
         byte[] getReply(ServerSocket socket) {
@@ -61,105 +77,58 @@ public class Server extends PrimaryNetworkUnit {
             return new byte[] {ip[0],ip[1],ip[2],ip[3],(byte)(socket.getLocalPort()>>>8),(byte)socket.getLocalPort()};
         }
 
-        @Override
-        public void run() {
-            try (ServerSocket serverSocket = new ServerSocket(0, 30, ia.getAddress())) {
+        class ServerBrdCell implements Runnable, Closeable {
+            private DatagramSocket receiver;
+            private DatagramSocket sender;
+            private final byte[] reply;
 
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-
+            ServerBrdCell(byte[] reply) {
+                this.reply = reply;
             }
-        }
-    }
 
-    class ServerConnectionBuilder extends ConnectionBuilder {
-        private final ServerSocket socket;
-        private final ServerBrdListener brdListener;
-
-        ServerConnectionBuilder(InterfaceAddress ia) throws IOException {
-            socket = new ServerSocket(0, 30, ia.getAddress());
-            try {
-                brdListener = new ServerBrdListener(ia, getReply());
-            } catch (IOException e) {
-                socket.close();
-                throw e;
-            }
-        }
-
-        byte[] getReply() {
-            byte[] ip = socket.getInetAddress().getAddress();
-            return new byte[] {ip[0],ip[1],ip[2],ip[3],(byte)(socket.getLocalPort()>>>8),(byte)socket.getLocalPort()};
-        }
-
-        public void launch() {
-            brdListener.start();
-            start();
-        }
-
-        @Override
-        public void run() {
-            while (!isInterrupted()) {
-                try {
-                    Socket newConnection = socket.accept();
-                    new ConnectionHandler(newConnection).start();
-                } catch (IOException ignore) {}
-            }
-        }
-
-        @Override
-        public void close() throws IOException {
-            if (brdListener != null) brdListener.close();
-            if (socket != null) socket.close();
-        }
-    }
-
-    class ServerBrdListener extends BrdListener {
-        private final DatagramSocket receiver;
-        private final DatagramSocket sender;
-        private final byte[] reply;
-
-        ServerBrdListener(InterfaceAddress ia, byte[] reply) throws IOException {
-            receiver = new DatagramSocket(19819, ia.getAddress());
-            sender = getSender(ia);
-            this.reply = reply;
-            setDaemon(true);
-        }
-
-        private DatagramSocket getSender(InterfaceAddress ia) throws ConnectionError {
-            for (int port = 19820; port <= 65536; port++) {
-                try {
-                    return new DatagramSocket(port, ia.getAddress());
+            @Override
+            public void run() {
+                DatagramPacket packet = new DatagramPacket(new byte[0], 0);
+                try (ServerBrdCell openedCell = open()) {
+                    registerResource(openedCell);
+                    while (! Thread.currentThread().isInterrupted()) {
+                        try {
+                            receiver.receive(packet);
+                            sender.send(new DatagramPacket(reply, reply.length, packet.getSocketAddress()));
+                        } catch (IOException ignore) {}
+                    }
                 } catch (SocketException ignore) {}
             }
-            throw new ConnectionError();
-        }
 
-        @Override
-        public void run() {
-            DatagramPacket packet = new DatagramPacket(new byte[0], 0);
-            while(!isInterrupted()) {
-                try {
-                    receiver.receive(packet);
-                    sender.send(new DatagramPacket(reply, 6, packet.getSocketAddress()));
-                } catch (IOException ignore) {}
+            private ServerBrdCell open() throws SocketException {
+                receiver = new DatagramSocket(19819, ia.getAddress());
+                sender = getSender(ia);
+                return this;
             }
-            close();
+
+            private DatagramSocket getSender(InterfaceAddress ia) {
+                for (int port = 19820; port <= 65536; port++) {
+                    try {
+                        return new DatagramSocket(port, ia.getAddress());
+                    } catch (SocketException ignore) {}
+                }
+                return null;
+            }
+
+            @Override
+            public void close() {
+                if (receiver != null) receiver.close();
+                if (sender != null) sender.close();
+            }
         }
 
-        @Override
-        public void close() {
-            if (receiver != null) receiver.close();
-            if (sender != null) sender.close();
-        }
     }
 
-    class ConnectionHandler extends Handler {
+    class ServerConnectionHandler implements Runnable {
         Socket socket;
 
-        public ConnectionHandler(Socket socket) {
+        public ServerConnectionHandler(Socket socket) {
             this.socket = socket;
-            setDaemon(true);
         }
 
         @Override
@@ -217,11 +186,6 @@ public class Server extends PrimaryNetworkUnit {
             while (true) {
                 networkController.messageController.add(connection.receive());
             }
-        }
-
-        @Override
-        public void close() throws IOException {
-
         }
     }
 }

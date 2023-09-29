@@ -32,16 +32,17 @@ public class NetworkController {
 
     public void setServerUnit(String serverName, String password) throws ConnectionError {
         closeCurrentUnit();
-        unit = new Server(this, serverName, password);
+        setUnit(new Server(this, serverName, password));
         unit.launch();
     }
 
-    public void initNewClient(byte[] serverSocket, InterfaceAddress ia, String password) {
+    public void setClientUnit(byte[] serverSocket, InterfaceAddress ia, String password) {
         Client client = new Client(this, serverSocket, ia, password);
         client.launch();
     }
 
-    void setClientUnit(Client client) {
+    void setClientUnit(Client client) throws ConnectionError {
+        if (! (unit instanceof ClientServerFinder)) throw new ConnectionError();
         closeCurrentUnit();
         unit = client;
     }
@@ -50,6 +51,10 @@ public class NetworkController {
         closeCurrentUnit();
         unit = new ClientServerFinder(this);
         unit.launch();
+    }
+
+    private synchronized void setUnit(NetworkUnit unit) {
+        this.unit = unit;
     }
 
     public void closeCurrentUnit() {

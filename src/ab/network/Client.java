@@ -5,7 +5,6 @@ import ab.model.chat.Message;
 import java.io.IOException;
 import java.net.InterfaceAddress;
 import java.net.Socket;
-import java.util.concurrent.ThreadPoolExecutor;
 
 import static ab.network.Util.*;
 import static ab.model.chat.MessageType.*;
@@ -24,30 +23,33 @@ public class Client extends PrimaryNetworkUnit {
     }
 
     @Override
-    void launch() {
-        Thread thread = new ClientHandler();
-        thread.start();
+    void send(Message message) {
+        try {
+            connection.send(message);
+        } catch (IOException e) {
+            networkController.messageController.add(Message.CONNECTION_CLOSED);
+            close();
+        }
     }
 
     @Override
-    public void close() {
-        super.close();
+    void launch() {
+        startTask(new ClientHandler());
     }
 
-    class ClientHandler extends Thread {
+    class ClientHandler implements Runnable {
         @Override
         public void run() {
             try (Socket socket = new Socket(getIP(serverSocket), getPort(serverSocket), ia.getAddress(), 0);
                  Connection connection = new Connection(socket)) {
+                registerResource(connection);
                 Client.this.connection = connection;
                 if(clientIfPasswordCorrect()) {
                     clientHandshake();
                     networkController.setClientUnit(Client.this);
                     clientMainLoop();
-                } else wrongPassword();
-            } catch (IOException | ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
+                } else passwordCheckFailed();
+            } catch (IOException | ClassNotFoundException ignore) {}
         }
 
         private boolean clientIfPasswordCorrect() throws IOException, ClassNotFoundException {
@@ -78,11 +80,13 @@ public class Client extends PrimaryNetworkUnit {
 
         private void clientMainLoop() throws IOException, ClassNotFoundException {
             while (true) {
-                networkController.messageController.add(connection.receive());
+                Message message = connection.receive();
+                networkController.messageController.add(message);
+                if (CONNECTION_CLOSED == message.getType())return;
             }
         }
 
-        private void wrongPassword() {
+        private void passwordCheckFailed() {
             networkController.wrongPassword();
         }
     }

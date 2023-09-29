@@ -1,22 +1,23 @@
 package ab.view;
 
 import ab.control.Controller;
+import ab.control.ViewController;
 import javafx.fxml.FXML;
 
 public class ClientPaneController {
-    Controller controller;
+    ViewController viewcontroller;
 
     @FXML
     private void handleCancel() {
-        controller.setStart();
+        viewcontroller.setStart();
     }
 
     @FXML
     private void handleGame() {
-        controller.setGame();
+        viewcontroller.setGame();
     }
 
-    public void setController(Controller controller){
-        this.controller = controller;
+    public void setController(ViewController viewcontroller){
+        this.viewcontroller = viewcontroller;
     }
 }

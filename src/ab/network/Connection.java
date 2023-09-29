@@ -28,9 +28,15 @@ public class Connection implements Closeable {
     }
 
     @Override
-    public void close() throws IOException {
-        in.close();
-        out.close();
-        socket.close();
+    public void close() {
+        try {
+            in.close();
+        } catch (IOException ignore) {}
+        try {
+            out.close();
+        } catch (IOException ignore) {}
+        try {
+            socket.close();
+        } catch (IOException ignore) {}
     }
 }
