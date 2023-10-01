@@ -12,13 +12,13 @@ public class TestConnection {
     static Object monitor = new Object();
 
     public static void main(String[] args) throws ConnectionError, UnknownHostException, InterruptedException {
-        Controller controller = new Controller(new BorderPane());
-        NetworkController nControl = new NetworkController(new MessageController(), controller);
-        nControl.setServerFinder();
-
-        Thread.sleep(2000);
-
-        nControl.closeCurrentUnit();
+//        Controller controller = new Controller(new BorderPane());
+//        NetworkController nControl = new NetworkController(new MessageController(), controller);
+//        nControl.setServerFinder();
+//
+//        Thread.sleep(2000);
+//
+//        nControl.closeCurrentUnit();
     }
 
     static String getTime() {

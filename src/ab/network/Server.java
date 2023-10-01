@@ -27,6 +27,7 @@ public class Server extends PrimaryNetworkUnit {
     }
 
     private void initHandlers() {
+        handlers = new ArrayList<>();
         networkController.localNetworks.forEach(ia -> handlers.add(new ServerSocketHandler(ia)));
     }
 
@@ -91,6 +92,7 @@ public class Server extends PrimaryNetworkUnit {
                 DatagramPacket packet = new DatagramPacket(new byte[0], 0);
                 try (ServerBrdCell openedCell = open()) {
                     registerResource(openedCell);
+                    System.out.println("Server broadcast is running");
                     while (! Thread.currentThread().isInterrupted()) {
                         try {
                             receiver.receive(packet);
@@ -117,6 +119,7 @@ public class Server extends PrimaryNetworkUnit {
 
             @Override
             public void close() {
+                System.out.println("Bingo " + Thread.currentThread().getName());
                 if (receiver != null) receiver.close();
                 if (sender != null) sender.close();
             }

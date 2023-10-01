@@ -6,15 +6,15 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
 
-
-<AnchorPane prefHeight="500.0" prefWidth="377.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ab.view.ChatController">
+<AnchorPane prefHeight="500.0" prefWidth="200.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ab.view.ChatController">
    <children>
-      <HBox layoutX="14.0" layoutY="455.0" spacing="5.0">
+      <ListView layoutX="14.0" layoutY="13.0" prefHeight="70.0" prefWidth="377.0" AnchorPane.bottomAnchor="430.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
+      <ListView layoutX="21.0" layoutY="77.0" prefHeight="367.0" prefWidth="377.0" AnchorPane.bottomAnchor="50.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="77.0" />
+      <HBox layoutX="14.0" layoutY="455.0" spacing="5.0" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
          <children>
             <TextField prefHeight="31.0" prefWidth="280.0" />
             <Button mnemonicParsing="false" text="Button" />
          </children>
       </HBox>
-      <ListView layoutX="14.0" layoutY="13.0" prefHeight="437.0" prefWidth="350.0" />
    </children>
 </AnchorPane>

@@ -20,7 +20,7 @@ public class NetworkController {
 
     private NetworkUnit unit;
 
-    public NetworkController(MessageController messageController, Controller controller) throws ConnectionError {
+    public NetworkController(Controller controller, MessageController messageController) throws ConnectionError {
         try {
             localNetworks = getLocalNetworks();
         } catch (ConnectionError e) {
@@ -67,7 +67,7 @@ public class NetworkController {
     }
 
     public ThreadPoolExecutor getThreadPool() {
-        if (threadPool==null | threadPool.isShutdown()) {
+        if (threadPool==null) {
             threadPool = new ThreadPoolExecutor(0, 50,30L, TimeUnit.MINUTES, new ArrayBlockingQueue<>(50), Util::getDaemonThread);
         }
         return threadPool;

@@ -65,6 +65,7 @@ public class ClientServerFinder extends NetworkUnit {
             try (Closeable senderHeap = this) {
                 registerResource(senderHeap);
                 while (!Thread.currentThread().isInterrupted()) {
+                    System.out.println("sender is sending");
                     for (DatagramSocket sender: senderSockets) {
                         sender.send(BRD_REQUEST);
                     }

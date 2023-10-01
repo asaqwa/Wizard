@@ -2,6 +2,7 @@ package ab;
 
 import ab.control.Controller;
 import ab.control.ViewController;
+import ab.log.Log;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -13,6 +14,7 @@ public class Wizard extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
+        Log.rec("start");
         FXMLLoader loader = new FXMLLoader();
         loader.setLocation(Wizard.class.getResource("view/MainFrame.fxml"));
         rootLayout = (BorderPane) loader.load();
@@ -20,6 +22,7 @@ public class Wizard extends Application {
         ViewController viewController = new ViewController(rootLayout);
         Scene scene = new Scene(rootLayout);
         primaryStage.setScene(scene);
+
 
         primaryStage.show();
     }

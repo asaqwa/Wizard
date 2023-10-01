@@ -1,10 +1,9 @@
 package ab.view;
 
-import ab.control.Controller;
 import ab.control.ViewController;
 import javafx.fxml.FXML;
 
-public class ServerPaneController {
+public class ServerController {
     ViewController viewcontroller;
 
     @FXML
@@ -15,6 +14,11 @@ public class ServerPaneController {
     @FXML
     private void handleGame() {
         viewcontroller.setGame();
+    }
+
+    @FXML
+    private void handleStopServer () {
+        viewcontroller.stopServer();
     }
 
     public void setController(ViewController viewcontroller){
