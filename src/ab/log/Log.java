@@ -5,7 +5,7 @@ public class Log {
     static final Object monitor = new Object();
 
 
-    public static void rec(String s) {
+    public static void log(String s) {
         synchronized (monitor) {
             System.out.println(getTime() + Thread.currentThread().getName() + ": " + s);
         }

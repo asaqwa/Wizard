@@ -1,14 +1,17 @@
 package ab.network;
 
+import ab.log.Log;
 import ab.model.chat.Message;
-import ab.network.exceptions.ConnectionError;
 
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 import static ab.model.chat.MessageType.*;
 
@@ -17,13 +20,15 @@ public class Server extends PrimaryNetworkUnit {
     final Map<String, Connection> connections = new ConcurrentHashMap<>();
     String serverName;
     String password = "";
+    private boolean log;
 
 
-    public Server(NetworkController networkController, String serverName, String password) {
+    public Server(NetworkController networkController, String serverName, String password, boolean log) {
         super(networkController);
         this.serverName = serverName;
         this.password = password;
         initHandlers();
+        this.log = log;
     }
 
     private void initHandlers() {
@@ -33,6 +38,7 @@ public class Server extends PrimaryNetworkUnit {
 
     @Override
     void send(Message message) {
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ITERATOR !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         for (Map.Entry<String, Connection> c : connections.entrySet()) {
             try {
                 c.getValue().send(message);
@@ -59,23 +65,29 @@ public class Server extends PrimaryNetworkUnit {
         public void run() {
             ServerBrdCell brdCell = null;
             try (ServerSocket socket = new ServerSocket(0, 30, ia.getAddress())) {
+                if (log) Log.log("server socket is open: " + socket);
                 registerResource(socket);
                 brdCell = new ServerBrdCell(getReply(socket));
                 startTask(brdCell);
                 while (!Thread.currentThread().isInterrupted()) {
                     Socket newConnection = socket.accept();
+                    if (log) Log.log(socket + " accepted connection: " + newConnection);
                     startTask(new ServerConnectionHandler(newConnection));
                 }
             } catch (IOException ignore) {
             } finally {
+                if (log) Log.log("server socket in finally");
                 if (brdCell != null) brdCell.close();
             }
 
         }
 
-        byte[] getReply(ServerSocket socket) {
-            byte[] ip = socket.getInetAddress().getAddress();
-            return new byte[] {ip[0],ip[1],ip[2],ip[3],(byte)(socket.getLocalPort()>>>8),(byte)socket.getLocalPort()};
+        byte[] getReply(ServerSocket socket) throws IOException {
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            stream.write(socket.getInetAddress().getAddress());
+            stream.write(new byte[]{(byte)(socket.getLocalPort()>>>8),(byte)socket.getLocalPort()});
+            stream.write(serverName.getBytes());
+            return stream.toByteArray();
         }
 
         class ServerBrdCell implements Runnable, Closeable {
@@ -92,14 +104,19 @@ public class Server extends PrimaryNetworkUnit {
                 DatagramPacket packet = new DatagramPacket(new byte[0], 0);
                 try (ServerBrdCell openedCell = open()) {
                     registerResource(openedCell);
-                    System.out.println("Server broadcast is running");
+                    if (log) Log.log("server broadcast is open: " + receiver);
                     while (! Thread.currentThread().isInterrupted()) {
-                        try {
+
                             receiver.receive(packet);
+                            if (log) Log.log("server broadcast packet received: " + packet.getSocketAddress());
                             sender.send(new DatagramPacket(reply, reply.length, packet.getSocketAddress()));
-                        } catch (IOException ignore) {}
+
                     }
-                } catch (SocketException ignore) {}
+                } catch (SocketException ignore) {
+                    if (log) Log.log("server brd is closed in catch socket exception");
+                } catch (IOException e) {
+                    if (log) Log.log("server brd is closed in catch IOException");
+                }
             }
 
             private ServerBrdCell open() throws SocketException {
@@ -119,7 +136,7 @@ public class Server extends PrimaryNetworkUnit {
 
             @Override
             public void close() {
-                System.out.println("Bingo " + Thread.currentThread().getName());
+                if (log) Log.log("Server Broadcast in close");
                 if (receiver != null) receiver.close();
                 if (sender != null) sender.close();
             }
@@ -138,6 +155,7 @@ public class Server extends PrimaryNetworkUnit {
         public void run() {
             String userName = null;
             try (Connection connection = new Connection(socket)) {
+                if (log) Log.log("server, new connection in progress: " + socket);
                 if (serverIfPasswordCorrect(connection)) {
                     userName = serverHandshake(connection);
                     connections.put(userName, connection);

@@ -1,12 +1,14 @@
 package ab.control;
 
 import ab.Wizard;
+import ab.model.chat.ServerFoundMessage;
 import ab.network.exceptions.ConnectionError;
 import ab.view.*;
 import ab.view.GameController;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.layout.BorderPane;
+import javafx.stage.Stage;
 import javafx.stage.Window;
 
 import java.io.IOException;
@@ -14,7 +16,7 @@ import java.net.UnknownHostException;
 
 public class ViewController {
     Controller controller;
-    Window mainWindow;
+    Stage primaryStage;
     BorderPane rootLayout;
     Node startPane;
     Node findServer;
@@ -23,9 +25,9 @@ public class ViewController {
     Node gamePane;
     Node gameStat;
 
-    public ViewController(BorderPane rootLayout) {
+    public ViewController(BorderPane rootLayout, Stage stage) {
         this.rootLayout = rootLayout;
-//        mainWindow = rootLayout.getScene().getWindow();
+        primaryStage = stage;
         initPanes();
         controller = new Controller(this);
         setStart();
@@ -33,25 +35,25 @@ public class ViewController {
 
     private void initPanes() {
         try {
-            FXMLLoader loader = new FXMLLoader(Wizard.class.getResource("view/StartPane.fxml"));
+            FXMLLoader loader = new FXMLLoader(Wizard.class.getResource("view/fxml/Home.fxml"));
             startPane = loader.load();
             ((HomeController) loader.getController()).setController(this);
 
 
-            loader = new FXMLLoader(Wizard.class.getResource("view/FindServer.fxml"));
+            loader = new FXMLLoader(Wizard.class.getResource("view/fxml/ServerScan.fxml"));
             findServer = loader.load();
             serverScanController = (ServerScanController) loader.getController();
             serverScanController.setController(this);
 
-            loader = new FXMLLoader(Wizard.class.getResource("view/ServerPane.fxml"));
+            loader = new FXMLLoader(Wizard.class.getResource("view/fxml/Server.fxml"));
             serverPane = loader.load();
             ((ServerController) loader.getController()).setController(this);
 
-            loader = new FXMLLoader(Wizard.class.getResource("view/GamePane.fxml"));
+            loader = new FXMLLoader(Wizard.class.getResource("view/fxml/Game.fxml"));
             gamePane = loader.load();
             ((GameController) loader.getController()).setController(this);
 
-            loader = new FXMLLoader(Wizard.class.getResource("view/GameStatistics.fxml"));
+            loader = new FXMLLoader(Wizard.class.getResource("view/fxml/GameInfo.fxml"));
 //            ((GameStatisticsController) loader.getController()).setController(this);
             gameStat = loader.load();
         } catch (IOException e) {
@@ -95,11 +97,11 @@ public class ViewController {
         rootLayout.setRight(gameStat);
     }
 
-    public Window getMainWindow() {
-        return mainWindow;
+    public Window getPrimaryStage() {
+        return primaryStage;
     }
 
-    public void newServer(String serverName) {
-        serverScanController.setNewServer(serverName);
+    public void newServer(ServerFoundMessage message) {
+        serverScanController.setNewServer(message);
     }
 }

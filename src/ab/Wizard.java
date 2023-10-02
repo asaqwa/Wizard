@@ -1,6 +1,5 @@
 package ab;
 
-import ab.control.Controller;
 import ab.control.ViewController;
 import ab.log.Log;
 import javafx.application.Application;
@@ -14,12 +13,12 @@ public class Wizard extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        Log.rec("start");
+        Log.log("start");
         FXMLLoader loader = new FXMLLoader();
-        loader.setLocation(Wizard.class.getResource("view/MainFrame.fxml"));
+        loader.setLocation(Wizard.class.getResource("view/fxml/RootWindow.fxml"));
         rootLayout = (BorderPane) loader.load();
 
-        ViewController viewController = new ViewController(rootLayout);
+        ViewController viewController = new ViewController(rootLayout, primaryStage);
         Scene scene = new Scene(rootLayout);
         primaryStage.setScene(scene);
 

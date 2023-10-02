@@ -1,5 +1,6 @@
 package ab.network;
 
+import ab.log.Log;
 import ab.model.chat.Message;
 import ab.model.chat.MessageType;
 import ab.model.chat.ServerFoundMessage;
@@ -11,10 +12,12 @@ import java.net.*;
 
 public class ClientServerFinder extends NetworkUnit {
     private final DatagramPacket BRD_REQUEST;
+    private final boolean log;
 
-    public ClientServerFinder(NetworkController networkController) throws UnknownHostException {
+    public ClientServerFinder(NetworkController networkController, boolean log) throws UnknownHostException {
         super(networkController);
         BRD_REQUEST = new DatagramPacket(new byte[0], 0, InetAddress.getByName("255.255.255.255"), 19819);
+        this.log = log;
     }
 
     @Override
@@ -38,10 +41,12 @@ public class ClientServerFinder extends NetworkUnit {
         @Override
         public void run() {
             try (DatagramSocket receiver = new DatagramSocket(19819, ia.getAddress())) {
+                if (log) Log.log("client broadcast receiver is ready");
                 registerResource(receiver);
                 while (!Thread.currentThread().isInterrupted()) {
-                    DatagramPacket packet = new DatagramPacket(new byte[6], 6);
+                    DatagramPacket packet = new DatagramPacket(new byte[124], 124);
                     receiver.receive(packet);
+                    if (log) Log.log("client brd found a server from: " + packet.getSocketAddress());
                     networkController.messageController.add(new ServerFoundMessage(MessageType.SERVER_FOUND,
                             packet.getData(), ia));
                 }
@@ -63,12 +68,13 @@ public class ClientServerFinder extends NetworkUnit {
         public void run() {
             // senderSocket.close() does not throw an exception
             try (Closeable senderHeap = this) {
+                if (log) Log.log("client sender is ready");
                 registerResource(senderHeap);
                 while (!Thread.currentThread().isInterrupted()) {
-                    System.out.println("sender is sending");
                     for (DatagramSocket sender: senderSockets) {
                         sender.send(BRD_REQUEST);
                     }
+                    if (log) Log.log("client sender sent request");
                     Thread.sleep(1500);
                 }
             } catch (IOException | InterruptedException | NullPointerException ignore) {}
@@ -86,7 +92,6 @@ public class ClientServerFinder extends NetworkUnit {
         @Override
         public void close() {
             for (DatagramSocket senderSocket : senderSockets) senderSocket.close();
-            Thread.currentThread().interrupt();
         }
     }
 }

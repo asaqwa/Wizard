@@ -1,6 +1,7 @@
 package ab.view;
 
 import ab.control.ViewController;
+import ab.model.chat.ServerFoundMessage;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -13,9 +14,9 @@ public class ServerScanController {
     @FXML
     Label selectedServerName;
     @FXML
-    TableView<String> serverTable;
+    TableView<ServerFoundMessage> serverTable;
     @FXML
-    TableColumn<String, String> serverList;
+    TableColumn<ServerFoundMessage, String> serverList;
     @FXML
     TextField userName;
     @FXML
@@ -23,12 +24,12 @@ public class ServerScanController {
 
     ViewController viewcontroller;
 
-    private final ObservableList<String> servers = FXCollections.observableArrayList();
+    private final ObservableList<ServerFoundMessage> servers = FXCollections.observableArrayList();
 
     @FXML
     private void initialize() {
         // Инициализация таблицы адресатов с двумя столбцами.
-        serverList.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue()));
+        serverList.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getServerName()));
 
         // Очистка дополнительной информации об адресате.
 //        showSelectedServer(null);
@@ -40,7 +41,7 @@ public class ServerScanController {
         // Слушаем изменения выбора, и при изменении отображаем
         // дополнительную информацию об адресате.
         serverTable.getSelectionModel().selectedItemProperty().addListener(
-                (observable, oldValue, newValue) -> showSelectedServer(newValue));
+                (observable, oldValue, newValue) -> showSelectedServer(newValue.getServerName()));
         serverTable.setItems(servers);
     }
 
@@ -67,7 +68,9 @@ public class ServerScanController {
         this.viewcontroller = viewcontroller;
     }
 
-    public void setNewServer(String serverName) {
-        servers.add(serverName);
+    public void setNewServer(ServerFoundMessage message) {
+        if (!servers.contains(message)) {
+            servers.add(message);
+        }
     }
 }

@@ -4,7 +4,6 @@ import ab.control.Controller;
 import ab.control.MessageController;
 import ab.network.exceptions.ConnectionError;
 
-import java.io.IOException;
 import java.net.*;
 
 import java.util.*;
@@ -17,10 +16,10 @@ public class NetworkController {
     final MessageController messageController;
     private final Controller controller;
     private ThreadPoolExecutor threadPool;
-
     private NetworkUnit unit;
+    private boolean log = true;
 
-    public NetworkController(Controller controller, MessageController messageController) throws ConnectionError {
+    public NetworkController(Controller controller, MessageController messageController, boolean log) throws ConnectionError {
         try {
             localNetworks = getLocalNetworks();
         } catch (ConnectionError e) {
@@ -28,11 +27,12 @@ public class NetworkController {
         }
         this.controller = controller;
         this.messageController = messageController;
+        this.log = log;
     }
 
     public void setServerUnit(String serverName, String password) throws ConnectionError {
         closeCurrentUnit();
-        setUnit(new Server(this, serverName, password));
+        setUnit(new Server(this, serverName, password, log));
         unit.launch();
     }
 
@@ -49,7 +49,7 @@ public class NetworkController {
 
     public void setServerFinder() throws UnknownHostException, ConnectionError {
         closeCurrentUnit();
-        unit = new ClientServerFinder(this);
+        unit = new ClientServerFinder(this, log);
         unit.launch();
     }
 

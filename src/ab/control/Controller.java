@@ -15,6 +15,7 @@ public class Controller {
     NetworkController networkController;
     MessageController messageController;
     GameController gameController;
+    boolean log = true;
 
 
     public Controller(ViewController viewController) {
@@ -23,7 +24,7 @@ public class Controller {
         messageController.setController(this);
         gameController = new GameController();
         try {
-            networkController = new NetworkController(this, messageController);
+            networkController = new NetworkController(this, messageController, log);
         } catch (ConnectionError e) {}
     }
 

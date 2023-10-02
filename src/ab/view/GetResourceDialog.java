@@ -4,7 +4,6 @@ import ab.Wizard;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
-import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -12,29 +11,22 @@ import javafx.stage.Stage;
 import java.awt.*;
 import java.io.IOException;
 
-public class GetResourceDialogController {
-    private Pane root;
-    private String resourceName;
+public class GetResourceDialog {
     private boolean isOk;
     private Stage dialogWindow;
     @FXML
     private TextField resource;
 //    private Label
 
-    public GetResourceDialogController(Pane root, String resourceName) {
-        this.root = root;
-        this.resourceName = resourceName;
-    }
 
-    public static GetResourceDialogController getController(Pane root, String resourceName) throws IOException {
+    public static GetResourceDialog getController(Pane root, String resourceName) throws IOException {
         FXMLLoader loader = new FXMLLoader(Wizard.class.getResource("view/GetResourceDialog.fxml"));
-        Stage stage =
         Stage dialogWindow = new Stage();
         dialogWindow.setTitle(resourceName + " request");
         dialogWindow.initModality(Modality.WINDOW_MODAL);
         dialogWindow.initOwner(root.getScene().getWindow());
         dialogWindow.setScene(new Scene(loader.load()));
-        GetResourceDialogController controller = loader.getController();
+        GetResourceDialog controller = loader.getController();
         controller.dialogWindow = dialogWindow;
         return controller;
     }

@@ -1,5 +1,6 @@
 package ab.network;
 
+import ab.log.Log;
 import ab.model.chat.Message;
 import ab.network.exceptions.ConnectionError;
 
@@ -41,6 +42,7 @@ public abstract class NetworkUnit implements Closeable {
 
     @Override
     public void close() {
+        Log.log("Network unit in close");
         int resAmount;
         synchronized (registeredResources) {
             threadPool.getQueue().forEach(threadPool::remove);

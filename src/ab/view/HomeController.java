@@ -18,13 +18,13 @@ public class HomeController {
     @FXML
     private void showStartServerDialog() {
         try {
-            FXMLLoader loader = new FXMLLoader(Wizard.class.getResource("view/StartServerDialog.fxml"));
+            FXMLLoader loader = new FXMLLoader(Wizard.class.getResource("view/fxml/StartServerDialog.fxml"));
             AnchorPane page = (AnchorPane) loader.load();
 
             Stage dialogStage = new Stage();
             dialogStage.setTitle("Start new server");
             dialogStage.initModality(Modality.WINDOW_MODAL);
-            dialogStage.initOwner(viewcontroller.getMainWindow());
+            dialogStage.initOwner(viewcontroller.getPrimaryStage());
             Scene scene = new Scene(page);
             dialogStage.setScene(scene);
 
