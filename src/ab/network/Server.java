@@ -109,7 +109,7 @@ public class Server extends PrimaryNetworkUnit {
 
                             receiver.receive(packet);
                             if (log) Log.log("server broadcast packet received: " + packet.getSocketAddress());
-                            sender.send(new DatagramPacket(reply, reply.length, packet.getSocketAddress()));
+                            sender.send(new DatagramPacket(reply, reply.length, packet.getAddress(), 19819));
 
                     }
                 } catch (SocketException ignore) {
