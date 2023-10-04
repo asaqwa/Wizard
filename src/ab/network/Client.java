@@ -1,5 +1,6 @@
 package ab.network;
 
+import ab.control.Controller;
 import ab.model.chat.Message;
 
 import java.io.IOException;
@@ -15,8 +16,8 @@ public class Client extends PrimaryNetworkUnit {
     private String password;
     private Connection connection;
 
-    public Client(NetworkController networkController, byte[] serverSocket, InterfaceAddress ia, String password) {
-        super(networkController);
+    public Client(Controller controller, NetworkController networkController, byte[] serverSocket, InterfaceAddress ia, String password) {
+        super(controller, networkController);
         this.ia = ia;
         this.serverSocket = serverSocket;
         this.password = password;
@@ -27,7 +28,7 @@ public class Client extends PrimaryNetworkUnit {
         try {
             connection.send(message);
         } catch (IOException e) {
-            networkController.messageController.add(Message.CONNECTION_CLOSED);
+            controller.messageDeliver(Message.CONNECTION_CLOSED);
             close();
         }
     }
@@ -46,7 +47,7 @@ public class Client extends PrimaryNetworkUnit {
                 Client.this.connection = connection;
                 if(clientIfPasswordCorrect()) {
                     clientHandshake();
-                    networkController.setClientUnit(Client.this);
+                    controller.showGame(Client.this);
                     clientMainLoop();
                 } else passwordCheckFailed();
             } catch (IOException | ClassNotFoundException ignore) {}
@@ -64,14 +65,14 @@ public class Client extends PrimaryNetworkUnit {
                     if (CONNECTION_REJECTED == message.getType()) {
                         return false;
                     }
-                    password = networkController.getNewPassword();
+                    password = controller.passwordRequest();
                 }
             }
         }
 
         private void clientHandshake() throws IOException, ClassNotFoundException {
             while (true) {
-                userName = networkController.getName(userName);
+                userName = controller.userNameRequest(userName);
                 connection.send(new Message(USER_NAME, userName));
                 Message message = connection.receive();
                 if (message.getType()==NAME_ACCEPTED) return;
@@ -81,13 +82,13 @@ public class Client extends PrimaryNetworkUnit {
         private void clientMainLoop() throws IOException, ClassNotFoundException {
             while (true) {
                 Message message = connection.receive();
-                networkController.messageController.add(message);
+                controller.messageDeliver(message);
                 if (CONNECTION_CLOSED == message.getType())return;
             }
         }
 
         private void passwordCheckFailed() {
-            networkController.wrongPassword();
+            controller.showPasswordRejected();
         }
     }
 }

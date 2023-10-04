@@ -1,6 +1,6 @@
 package ab;
 
-import ab.control.ViewController;
+import ab.view.ViewController;
 import ab.log.Log;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;

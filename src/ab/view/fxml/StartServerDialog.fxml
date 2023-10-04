@@ -7,7 +7,7 @@
 <?import javafx.scene.layout.HBox?>
 
 
-<AnchorPane prefHeight="145.0" prefWidth="300.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ab.view.StartServerDialogController">
+<AnchorPane prefHeight="145.0" prefWidth="300.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ab.view.StartServerDialog">
    <children>
       <TextField fx:id="serverName" layoutX="127.0" layoutY="22.0" AnchorPane.leftAnchor="115.0" AnchorPane.rightAnchor="15.0" AnchorPane.topAnchor="15.0" />
       <TextField fx:id="password" layoutX="97.0" layoutY="94.0" AnchorPane.leftAnchor="115.0" AnchorPane.rightAnchor="15.0" AnchorPane.topAnchor="60.0" />

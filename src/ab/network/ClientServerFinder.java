@@ -1,5 +1,6 @@
 package ab.network;
 
+import ab.control.Controller;
 import ab.log.Log;
 import ab.model.chat.Message;
 import ab.model.chat.MessageType;
@@ -14,8 +15,8 @@ public class ClientServerFinder extends NetworkUnit {
     private final DatagramPacket BRD_REQUEST;
     private final boolean log;
 
-    public ClientServerFinder(NetworkController networkController, boolean log) throws UnknownHostException {
-        super(networkController);
+    public ClientServerFinder(Controller controller, NetworkController networkController, boolean log) throws UnknownHostException {
+        super(controller, networkController);
         BRD_REQUEST = new DatagramPacket(new byte[0], 0, InetAddress.getByName("255.255.255.255"), 19819);
         this.log = log;
     }
@@ -25,7 +26,7 @@ public class ClientServerFinder extends NetworkUnit {
 
     @Override
     void launch() throws ConnectionError {
-        for (InterfaceAddress ia : networkController.localNetworks) {
+        for (InterfaceAddress ia : localNetworks) {
             startTask(new ClientBrdReceiverCell(ia));
         }
         startTask(new ClientBrdSenderHeap());
@@ -48,7 +49,7 @@ public class ClientServerFinder extends NetworkUnit {
                     receiver.receive(packet);
                     if (log) Log.log("client brd found a server from: " + packet.getAddress());
                     Log.log(new String(packet.getData()));
-                    networkController.messageController.add(new ServerFoundMessage(MessageType.SERVER_FOUND,
+                    controller.messageDeliver(new ServerFoundMessage(MessageType.SERVER_FOUND,
                             packet.getData(), ia));
                 }
             } catch (IOException ignore) {
@@ -60,7 +61,7 @@ public class ClientServerFinder extends NetworkUnit {
         private final DatagramSocket[] senderSockets;
 
         public ClientBrdSenderHeap() throws ConnectionError {
-            senderSockets = networkController.localNetworks.stream()
+            senderSockets = localNetworks.stream()
                         .map(this::createSender).toArray(DatagramSocket[]::new);
             if (senderSockets.length == 0) throw new ConnectionError();
         }

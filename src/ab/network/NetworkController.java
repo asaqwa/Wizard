@@ -32,24 +32,24 @@ public class NetworkController {
 
     public void setServerUnit(String serverName, String password) throws ConnectionError {
         closeCurrentUnit();
-        setUnit(new Server(this, serverName, password, log));
+        setUnit(new Server(controller, this, serverName, password, log));
         unit.launch();
     }
 
-    public void setClientUnit(byte[] serverSocket, InterfaceAddress ia, String password) {
-        Client client = new Client(this, serverSocket, ia, password);
+    public void initClient(byte[] serverSocket, InterfaceAddress ia, String password) {
+        Client client = new Client(controller, this, serverSocket, ia, password);
         client.launch();
     }
 
-    void setClientUnit(Client client) throws ConnectionError {
+    public void setClientUnit(Client client) throws ConnectionError {
         if (! (unit instanceof ClientServerFinder)) throw new ConnectionError();
         closeCurrentUnit();
         unit = client;
     }
 
-    public void setServerFinder() throws UnknownHostException, ConnectionError {
+    public void setServerFinderUnit() throws UnknownHostException, ConnectionError {
         closeCurrentUnit();
-        unit = new ClientServerFinder(this, log);
+        unit = new ClientServerFinder(controller, this, log);
         unit.launch();
     }
 
@@ -71,18 +71,6 @@ public class NetworkController {
             threadPool = new ThreadPoolExecutor(0, 50,30L, TimeUnit.MINUTES, new ArrayBlockingQueue<>(50), Util::getDaemonThread);
         }
         return threadPool;
-    }
-
-    String getName(String oldName) {
-        return controller.getName(oldName);
-    }
-
-    String getNewPassword() {
-        return controller.getNewPassword();
-    }
-
-    public void wrongPassword() {
-        controller.wrongPassword();
     }
 
     private ArrayList<InterfaceAddress> getLocalNetworks() throws ConnectionError {

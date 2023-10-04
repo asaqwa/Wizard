@@ -1,5 +1,6 @@
 package ab.network;
 
+import ab.control.Controller;
 import ab.log.Log;
 import ab.model.chat.Message;
 
@@ -23,8 +24,8 @@ public class Server extends PrimaryNetworkUnit {
     private boolean log;
 
 
-    public Server(NetworkController networkController, String serverName, String password, boolean log) {
-        super(networkController);
+    public Server(Controller controller, NetworkController networkController, String serverName, String password, boolean log) {
+        super(controller, networkController);
         this.serverName = serverName;
         this.password = password;
         initHandlers();
@@ -33,7 +34,7 @@ public class Server extends PrimaryNetworkUnit {
 
     private void initHandlers() {
         handlers = new ArrayList<>();
-        networkController.localNetworks.forEach(ia -> handlers.add(new ServerSocketHandler(ia)));
+        localNetworks.forEach(ia -> handlers.add(new ServerSocketHandler(ia)));
     }
 
     @Override
@@ -43,7 +44,7 @@ public class Server extends PrimaryNetworkUnit {
             try {
                 c.getValue().send(message);
             } catch (IOException e) {
-                networkController.messageController.add(new Message(CONNECTION_CLOSED, c.getKey()));
+                controller.messageDeliver(new Message(CONNECTION_CLOSED, c.getKey()));
                 c.getValue().close();
             }
         }
@@ -205,7 +206,7 @@ public class Server extends PrimaryNetworkUnit {
 
         private void serverMainLoop(Connection connection, String userName) throws IOException, ClassNotFoundException {
             while (true) {
-                networkController.messageController.add(connection.receive());
+                controller.messageDeliver(connection.receive());
             }
         }
     }

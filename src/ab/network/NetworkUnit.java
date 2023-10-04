@@ -1,22 +1,26 @@
 package ab.network;
 
+import ab.control.Controller;
 import ab.log.Log;
 import ab.model.chat.Message;
 import ab.network.exceptions.ConnectionError;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.InterfaceAddress;
 import java.util.ArrayList;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public abstract class NetworkUnit implements Closeable {
-    final NetworkController networkController;
+    final Controller controller;
     private final ThreadPoolExecutor threadPool;
+    final ArrayList<InterfaceAddress> localNetworks;
     private ArrayList<Closeable> registeredResources = new ArrayList<>();
 
-    public NetworkUnit(NetworkController networkController) {
-        this.networkController = networkController;
+    public NetworkUnit(Controller controller, NetworkController networkController) {
+        this.controller = controller;
         threadPool = networkController.getThreadPool();
+        localNetworks = networkController.localNetworks;
     }
 
     abstract void send(Message message);

@@ -1,14 +1,13 @@
 package ab.control;
 
-import ab.Wizard;
+import ab.model.chat.Message;
+import ab.network.Client;
 import ab.network.NetworkController;
 import ab.network.exceptions.ConnectionError;
 import ab.view.*;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
-import javafx.scene.layout.BorderPane;
 
-import java.io.IOException;
+import java.net.InterfaceAddress;
+import java.net.UnknownHostException;
 
 public class Controller {
     ViewController viewController;
@@ -28,16 +27,78 @@ public class Controller {
         } catch (ConnectionError e) {}
     }
 
-    public String getNewPassword() {
-        return "";
+    public void showHome() {
+        networkController.closeCurrentUnit();
+        viewController.showHome();
     }
 
-    public String getName(String oldName) {
-        return "";
+    public void showServer(String serverName, String password) {
+        try {
+            networkController.setServerUnit(serverName, password);
+        } catch (ConnectionError e) {
+            e.printStackTrace();
+        }
+        viewController.showServer(serverName, password);
     }
 
-    public void wrongPassword() {
+    public void showServerScan() {
+        try {
+            networkController.setServerFinderUnit();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        } catch (ConnectionError e) {
+            e.printStackTrace();
+        }
+        viewController.showServerScan();
+    }
+
+    public void initClient(byte[] serverSocket, InterfaceAddress ia, String password) {
+        networkController.initClient(serverSocket, ia, password);
+    }
+
+    public void showClient(Client client) {
+        try {
+            networkController.setClientUnit(client);
+        } catch (ConnectionError e) {
+            throw new RuntimeException(e);
+        }
+        viewController.showGame();
+    }
+
+    public void showGame(Client client) {
+        try {
+            networkController.setClientUnit(client);
+        } catch (ConnectionError e) {
+            throw new RuntimeException(e);
+        }
+        viewController.showGame();
+    }
+
+    public void showPasswordRejected() {
         //new window;
     }
+
+    public void showGame() {
+        viewController.showGame();
+    }
+
+    public void closeNetworkUnit() {
+        networkController.closeCurrentUnit();
+    }
+
+    public String userNameRequest(String oldName) {
+        return viewController.getUserName(oldName);
+    }
+
+    public String passwordRequest() {
+        return viewController.getPassword();
+    }
+
+    public void messageDeliver(Message message) {
+        messageController.add(message);
+    }
+
+
+
 
 }

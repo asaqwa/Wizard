@@ -1,7 +1,6 @@
 package ab.control;
 
 import ab.model.chat.Message;
-import ab.model.chat.MessageType;
 import ab.model.chat.ServerFoundMessage;
 
 import java.util.ArrayDeque;
@@ -34,7 +33,7 @@ public class MessageController {
     void sort(Message message) {
         switch (message.getType()) {
             case SERVER_FOUND:
-                controller.viewController.newServer((ServerFoundMessage) message);
+                controller.viewController.newServerRegistration((ServerFoundMessage) message);
 
         }
     }

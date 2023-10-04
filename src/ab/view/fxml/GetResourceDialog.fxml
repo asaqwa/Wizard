@@ -6,19 +6,17 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
 
-
-<AnchorPane prefHeight="160.0" prefWidth="275.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ab.view.GetResourceDialogController">
+<AnchorPane prefHeight="160.0" prefWidth="275.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ab.view.GetResourceDialog">
    <children>
-      <Label layoutX="222.0" layoutY="21.0" text="Label" AnchorPane.rightAnchor="15.0" AnchorPane.topAnchor="15.0" />
-      <Label layoutX="23.0" layoutY="32.0" text="kasjdhfklasdjhflksadjhflkasdjhflkasdjhflka" AnchorPane.leftAnchor="20.0" AnchorPane.topAnchor="40.0" />
-      <TextField layoutX="110.0" layoutY="84.0" prefWidth="165.0" AnchorPane.rightAnchor="15.0" />
-      <Label alignment="CENTER_RIGHT" layoutX="34.0" layoutY="88.0" text="password:" AnchorPane.rightAnchor="185.0" />
-      <HBox layoutX="37.0" layoutY="121.0" prefHeight="25.0" prefWidth="234.0" spacing="80.0" AnchorPane.rightAnchor="4.0">
+      <Label fx:id="resourceRequest" layoutX="23.0" layoutY="32.0" text="Label" AnchorPane.leftAnchor="20.0" AnchorPane.topAnchor="20.0" />
+      <Label fx:id="warningMessage" layoutX="23.0" layoutY="57.0" text="Label" AnchorPane.leftAnchor="20.0" AnchorPane.topAnchor="45.0" />
+      <Label fx:id="resourceName" alignment="CENTER_RIGHT" layoutX="34.0" layoutY="88.0" text="password:" AnchorPane.rightAnchor="185.0" />
+      <TextField fx:id="resource" layoutX="110.0" layoutY="84.0" prefWidth="165.0" AnchorPane.rightAnchor="15.0" />
+      <HBox layoutX="37.0" layoutY="121.0" prefHeight="25.0" prefWidth="234.0" spacing="70.0" AnchorPane.rightAnchor="4.0">
          <children>
-            <Button mnemonicParsing="false" prefWidth="55.0" text="Ok" />
-            <Button mnemonicParsing="false" prefWidth="55.0" text="Cancel" />
+            <Button mnemonicParsing="false" onAction="#handleOk" prefWidth="65.0" text="Ok" />
+            <Button mnemonicParsing="false" onAction="#handleCancel" prefWidth="65.0" text="Cancel" />
          </children>
       </HBox>
-      <Label layoutX="23.0" layoutY="57.0" text="Label" AnchorPane.leftAnchor="20.0" AnchorPane.topAnchor="60.0" />
    </children>
 </AnchorPane>

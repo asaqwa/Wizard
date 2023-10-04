@@ -1,14 +1,19 @@
 package ab.view;
 
-import ab.control.ViewController;
+import ab.control.Controller;
 import ab.model.chat.ServerFoundMessage;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.stage.Stage;
 
-public class ServerScanController {
+public class ServerScan {
+    private Controller controller;
+    private final ObservableList<ServerFoundMessage> servers = FXCollections.observableArrayList();
+    private Stage primaryStage;
+
     @FXML
     Button connect;
     @FXML
@@ -22,24 +27,15 @@ public class ServerScanController {
     @FXML
     TextField password;
 
-    ViewController viewcontroller;
 
-    private final ObservableList<ServerFoundMessage> servers = FXCollections.observableArrayList();
 
     @FXML
     private void initialize() {
-        // Инициализация таблицы адресатов с двумя столбцами.
         serverList.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getServerName()));
 
-        // Очистка дополнительной информации об адресате.
-//        showSelectedServer(null);
+        showSelectedServer(null);
 
-        // deactivation of the buttons
-//        deleteButton.setDisable(true);
-//        editButton.setDisable(true);
-
-        // Слушаем изменения выбора, и при изменении отображаем
-        // дополнительную информацию об адресате.
+        // Слушаем изменения выбора,
         serverTable.getSelectionModel().selectedItemProperty().addListener(
                 (observable, oldValue, newValue) -> showSelectedServer(newValue.getServerName()));
         serverTable.setItems(servers);
@@ -56,16 +52,19 @@ public class ServerScanController {
 
     @FXML
     private void handleCancel() {
-        viewcontroller.setStart();
+        servers.clear();
+        controller.showHome();
     }
 
     @FXML
     private void handleConnect() {
-        viewcontroller.setGame();
+        servers.clear();
+        controller.showGame();
     }
 
-    public void setController(ViewController viewcontroller){
-        this.viewcontroller = viewcontroller;
+    public void initValues(Controller controller, Stage primaryStage){
+        this.controller = controller;
+        this.primaryStage = primaryStage;
     }
 
     public void setNewServer(ServerFoundMessage message) {

@@ -5,7 +5,7 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ab.view.HomeController">
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ab.view.Home">
    <children>
       <Button layoutX="125.0" layoutY="185.0" mnemonicParsing="false" onAction="#showStartServerDialog" text="Server" />
       <Button layoutX="414.0" layoutY="185.0" mnemonicParsing="false" onAction="#handleClient" text="Client" />

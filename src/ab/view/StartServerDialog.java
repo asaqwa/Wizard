@@ -6,7 +6,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
-public class StartServerDialogController {
+public class StartServerDialog {
     private Stage dialogStage;
     boolean isOkPressed;
 
@@ -41,8 +41,6 @@ public class StartServerDialogController {
     }
     @FXML
     private void handleCancel() {
-        System.out.println(serverName.getText().length());
-        System.out.println(password.getText().length());
         dialogStage.close();
     }
 }
