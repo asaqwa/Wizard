@@ -6,12 +6,13 @@ import ab.network.NetworkController;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.Pane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import javax.swing.text.html.HTMLDocument;
-import java.awt.*;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.function.Predicate;
@@ -34,7 +35,7 @@ public class GetResourceDialog {
 
 
     public static GetResourceDialog getDialogController(Stage primaryStage, String resourceName, boolean isEmptyAllowed, String oldName) {
-        FXMLLoader loader = new FXMLLoader(Wizard.class.getResource("view/GetResourceDialog.fxml"));
+        FXMLLoader loader = new FXMLLoader(Wizard.class.getResource("view/fxml/GetResourceDialog.fxml"));
         Stage dialogWindow = new Stage();
         dialogWindow.setTitle(resourceName + " request");
         dialogWindow.initModality(Modality.WINDOW_MODAL);

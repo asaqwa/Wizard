@@ -35,8 +35,8 @@ public class ViewController {
     public ViewController(BorderPane rootLayout, Stage stage) {
         this.rootLayout = rootLayout;
         primaryStage = stage;
-        initPanes();
         controller = new Controller(this);
+        initPanes();
         showHome();
     }
 
