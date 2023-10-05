@@ -30,13 +30,14 @@ public class NetworkController {
         this.log = log;
     }
 
-    public void setServerUnit(String serverName, String password) throws ConnectionError {
+    public void setServerUnit(String serverName, String password, String userName) throws ConnectionError {
         closeCurrentUnit();
-        setUnit(new Server(controller, this, serverName, password, log));
+        setUnit(new Server(controller, this, serverName, password, userName, log));
         unit.launch();
     }
 
     public void initClient(byte[] serverSocket, InterfaceAddress ia, String password) {
+        @SuppressWarnings(value = "resource")
         Client client = new Client(controller, this, serverSocket, ia, password);
         client.launch();
     }

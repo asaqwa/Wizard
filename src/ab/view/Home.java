@@ -18,24 +18,10 @@ public class Home {
 
     @FXML
     private void showStartServerDialog() {
-        GetResourceDialog.passwordDialog(primaryStage);
         try {
-            FXMLLoader loader = new FXMLLoader(Wizard.class.getResource("view/fxml/StartServerDialog.fxml"));
-            AnchorPane page = (AnchorPane) loader.load();
-
-            Stage dialogStage = new Stage();
-            dialogStage.setTitle("Start new server");
-            dialogStage.initModality(Modality.WINDOW_MODAL);
-            dialogStage.initOwner(primaryStage);
-            Scene scene = new Scene(page);
-            dialogStage.setScene(scene);
-
-            StartServerDialog dialogWindow = loader.getController();
-            dialogWindow.setDialogStage(dialogStage);
-
-            dialogStage.showAndWait();
-            if (dialogWindow.isOkPressed) {
-                controller.showServer(dialogWindow.serverName.getText(), dialogWindow.password.getText());
+            ServerDialog dialogController = ServerDialog.start(primaryStage);
+            if (dialogController.isOkPressed) {
+                controller.showServer(dialogController.serverName.getText(), dialogController.password.getText(), dialogController.userName.getText());
             }
         } catch (IOException e) {
             e.printStackTrace();

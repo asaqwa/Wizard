@@ -24,10 +24,11 @@ public class Server extends PrimaryNetworkUnit {
     private boolean log;
 
 
-    public Server(Controller controller, NetworkController networkController, String serverName, String password, boolean log) {
+    public Server(Controller controller, NetworkController networkController, String serverName, String password, String userName, boolean log) {
         super(controller, networkController);
         this.serverName = serverName;
         this.password = password;
+        this.userName = userName;
         initHandlers();
         this.log = log;
     }

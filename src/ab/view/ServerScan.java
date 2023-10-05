@@ -58,8 +58,9 @@ public class ServerScan {
 
     @FXML
     private void handleConnect() {
+        ServerFoundMessage message = serverTable.getSelectionModel().getSelectedItem();
+        controller.initClient(message.getServerData(), message.getIa(), password.getText());
         servers.clear();
-        controller.showGame();
     }
 
     public void initValues(Controller controller, Stage primaryStage){

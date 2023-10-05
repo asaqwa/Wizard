@@ -9,7 +9,7 @@ import java.util.Objects;
 public class ServerFoundMessage extends Message {
     private final byte[] serverData;
     private final InterfaceAddress ia;
-    private String serverName;
+    private final String serverName;
 
     public ServerFoundMessage(MessageType type,  byte[] serverData, InterfaceAddress ia) {
         super(type, null);
@@ -20,6 +20,14 @@ public class ServerFoundMessage extends Message {
 
     public String getServerName() {
         return serverName;
+    }
+
+    public byte[] getServerData() {
+        return serverData;
+    }
+
+    public InterfaceAddress getIa() {
+        return ia;
     }
 
     @Override

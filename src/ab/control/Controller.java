@@ -32,13 +32,13 @@ public class Controller {
         viewController.showHome();
     }
 
-    public void showServer(String serverName, String password) {
+    public void showServer(String serverName, String password, String userName) {
         try {
-            networkController.setServerUnit(serverName, password);
+            networkController.setServerUnit(serverName, password, userName);
         } catch (ConnectionError e) {
             e.printStackTrace();
         }
-        viewController.showServer(serverName, password);
+        viewController.showServer(serverName, userName);
     }
 
     public void showServerScan() {

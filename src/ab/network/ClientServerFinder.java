@@ -47,6 +47,9 @@ public class ClientServerFinder extends NetworkUnit {
                 while (!Thread.currentThread().isInterrupted()) {
                     DatagramPacket packet = new DatagramPacket(new byte[124], 124);
                     receiver.receive(packet);
+                    System.out.println(receiver.getLocalAddress());
+                    System.out.println(packet.getAddress());
+                    if (receiver.getLocalAddress().equals(packet.getAddress())) continue;
                     if (log) Log.log("client brd found a server from: " + packet.getAddress());
                     Log.log(new String(packet.getData()));
                     controller.messageDeliver(new ServerFoundMessage(MessageType.SERVER_FOUND,

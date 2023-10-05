@@ -3,17 +3,12 @@ package ab.view;
 import ab.Wizard;
 import ab.control.Controller;
 import ab.model.chat.ServerFoundMessage;
-import ab.network.exceptions.ConnectionError;
-import ab.view.*;
-import ab.view.Game;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 
 import java.io.IOException;
-import java.net.UnknownHostException;
 
 public class ViewController {
     private final Controller controller;
@@ -22,8 +17,6 @@ public class ViewController {
 
     private ServerScan serverScan;
     private Server server;
-
-
 
 
     Node startPane;
@@ -73,7 +66,7 @@ public class ViewController {
         rootLayout.setRight(null);
     }
 
-    public void showServer(String serverName, String password) {
+    public void showServer(String serverName, String userName) {
         rootLayout.setCenter(serverPane);
     }
 
@@ -87,11 +80,11 @@ public class ViewController {
     }
 
     public String getUserName(String oldName) {
-        return GetResourceDialog.userNameDialog(primaryStage, oldName);
+        return ResourceRequestDialog.getUserName(primaryStage, oldName);
     }
 
     public String getPassword() {
-        return GetResourceDialog.passwordDialog(primaryStage);
+        return ResourceRequestDialog.getPassword(primaryStage);
     }
 
     public Stage getPrimaryStage() {
